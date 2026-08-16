@@ -38,18 +38,18 @@ h1 small{display:block;font-family:var(--num);font-weight:600;font-size:12px;let
 .mode button.on{background:var(--panel2);color:var(--ink);box-shadow:inset 0 2px 0 var(--manx)}
 .mode button:focus-visible{outline:2px solid var(--manx);outline-offset:-2px}
 
-/* ── 車名編輯 ── */
-.name-edit{appearance:none;background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:6px;font-family:var(--tc);font-size:12px;padding:3px 10px;margin-left:10px;cursor:pointer;vertical-align:7px;white-space:nowrap}
-.name-edit:hover{color:var(--ink);border-color:var(--sub)}
-h1.unset{color:var(--sub);font-weight:700}
-#veh-edit{max-width:440px;margin-top:10px;display:grid;gap:8px}
-#veh-edit label{font-size:11.5px;color:var(--sub);display:block;margin-bottom:4px}
-#veh-edit input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:var(--tc);font-size:15px;padding:9px 11px}
-#veh-edit input:focus{outline:none;border-color:var(--manx)}
-#veh-edit .btns{display:flex;gap:8px;margin-top:2px}
-#veh-edit .btns button{appearance:none;border:none;font-family:var(--tc);font-weight:700;font-size:14px;padding:9px 18px;border-radius:9px;cursor:pointer}
-#veh-edit .btns .main{background:var(--manx);color:#08130D}
-#veh-edit .btns .ghost{background:transparent;border:1px solid var(--line);color:var(--sub)}
+/* ── 車名就地編輯 ── */
+h1.unset #veh-name{color:var(--sub);font-weight:700}
+.editable{cursor:text;border-bottom:1px dashed transparent;transition:border-color .15s}
+.editable:hover{border-bottom-color:var(--sub)}
+.pen{font-size:12px;color:#4a564d;margin-left:9px;cursor:pointer;vertical-align:9px;transition:color .15s;user-select:none}
+.pen:hover{color:var(--manx)}
+h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
+.inline-in{font:inherit;color:var(--ink);background:#0B100D;border:1px solid var(--manx);border-radius:8px;padding:0 8px;max-width:100%;letter-spacing:inherit}
+.inline-in:focus{outline:none}
+#veh-name-in{font-size:34px;font-weight:900;width:min(9em,100%)}
+@media(max-width:420px){#veh-name-in{font-size:27px}}
+#veh-sub-in{font-family:var(--num);font-size:12px;font-weight:600;letter-spacing:.28em;width:min(18em,100%);padding:2px 8px}
 
 /* ── stats ── */
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
@@ -94,6 +94,15 @@ h1.unset{color:var(--sub);font-weight:700}
 .row .price.tbd{color:var(--sub);font-size:12px;font-weight:500}
 .row.out .name,.row.out .price{color:var(--gray)}
 .count-note{font-size:12px;color:var(--sub);margin:10px 2px 24px}
+
+/* ── 分頁 ── */
+.pager{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:12px}
+.pg{appearance:none;min-width:32px;height:32px;padding:0 9px;background:var(--panel);border:1px solid var(--line);color:var(--sub);border-radius:8px;font-family:var(--num);font-weight:600;font-size:13px;cursor:pointer;transition:.15s}
+.pg:hover:not(:disabled){color:var(--ink);border-color:var(--sub)}
+.pg.on{background:var(--manx-deep);border-color:var(--manx);color:var(--ink)}
+.pg:disabled{opacity:.28;cursor:default}
+.pg-gap{color:var(--sub);font-size:13px;padding:0 2px}
+.pg-info{font-family:var(--num);font-size:12px;color:var(--sub);margin-left:auto;white-space:nowrap}
 
 /* ── 空狀態 ── */
 .empty{background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:26px 20px;text-align:center;color:var(--sub);font-size:13.5px;line-height:2}
@@ -148,12 +157,14 @@ h1.unset{color:var(--sub);font-weight:700}
 .plate h2{font-weight:900;font-size:40px;letter-spacing:.08em;line-height:1.05}
 @media(max-width:420px){.plate h2{font-size:31px}}
 .plate .en{font-family:var(--num);font-size:12px;letter-spacing:.3em;color:var(--sub);margin-top:6px;text-transform:uppercase}
-.plate .big{margin-top:20px}
-.plate .big .k{font-size:12px;color:var(--sub);letter-spacing:.14em}
-.plate .big .v{font-family:var(--num);font-weight:700;font-size:40px;color:var(--manx);letter-spacing:.02em;line-height:1.1}
-.plate .sub-stats{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap}
-.plate .sub-stats .k{font-size:11px;color:var(--sub)}
-.plate .sub-stats .v{font-family:var(--num);font-weight:600;font-size:18px}
+.plate-stats{display:flex;align-items:flex-end;gap:24px;margin-top:20px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.plate-stats::-webkit-scrollbar{display:none}
+.plate-stats .ps{flex:0 0 auto}
+.plate-stats .k{font-size:11px;color:var(--sub);white-space:nowrap}
+.plate-stats .v{font-family:var(--num);font-weight:600;font-size:18px;white-space:nowrap;line-height:1.25}
+.plate-stats .ps.big .k{font-size:12px;letter-spacing:.14em}
+.plate-stats .ps.big .v{font-weight:700;font-size:40px;color:var(--manx);letter-spacing:.02em;line-height:1.1}
+@media(max-width:420px){.plate-stats{gap:18px}}
 
 .sec{margin-bottom:26px}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--manx-deep);padding-bottom:8px;margin-bottom:2px}
@@ -229,14 +240,12 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
 <header>
   <div class="head-in">
     <div class="eyebrow">Build Sheet · Mod Ledger</div>
-    <div id="veh-view">
-      <h1><span id="veh-name">我的愛車</span><small id="veh-sub">BUILD SHEET</small><button class="name-edit" onclick="openNameEdit()">✎ 車名</button></h1>
-    </div>
-    <div id="veh-edit" hidden>
-      <div><label>車名</label><input id="v-name" maxlength="24" placeholder="例:黑頂鶴"></div>
-      <div><label>英文標語(選填,顯示在車名下方)</label><input id="v-sub" maxlength="48" placeholder="例:MANX GREEN PROJECT"></div>
-      <div class="btns"><button class="main" onclick="saveName()">確定</button><button class="ghost" onclick="cancelName()">取消</button></div>
-    </div>
+    <h1 id="veh-h1">
+      <span id="veh-name" class="editable" onclick="editInline('name')" title="點一下修改車名">我的愛車</span>
+      <input id="veh-name-in" class="inline-in" maxlength="24" placeholder="車名" hidden>
+      <span class="pen" onclick="editInline('name')" title="修改車名">✎</span>
+      <small><span id="veh-sub" class="editable" onclick="editInline('sub')" title="點一下修改標語">BUILD SHEET</span><input id="veh-sub-in" class="inline-in" maxlength="48" placeholder="英文標語" hidden><span class="pen" onclick="editInline('sub')" title="修改標語">✎</span></small>
+    </h1>
     <div class="mode" role="tablist">
       <button id="tab-rec" class="on" onclick="setMode('rec')">紀錄模式</button>
       <button id="tab-show" onclick="setMode('show')">展示模式</button>
@@ -254,9 +263,9 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
     <div class="addbox" id="addbox">
       <h3 id="form-title">＋ 新增項目</h3>
       <div class="grid">
-        <div><label>品牌</label><input id="a-brand" placeholder="Brembo"></div>
+        <div><label>品牌</label><input id="a-brand" placeholder="可留空"></div>
         <div><label>完工價 (NT$)</label><input id="a-price" type="number" inputmode="numeric" placeholder="0 = 未定價"></div>
-        <div class="full"><label>品項名稱</label><input id="a-name" placeholder="RCS 15 直推總泵"></div>
+        <div class="full"><label>品項名稱</label><input id="a-name" placeholder="例:前土除"></div>
         <div><label>分類</label><select id="a-cat"></select></div>
         <div><label>狀態</label><select id="a-status">
           <option value="on">現役</option><option value="wish">願望清單</option><option value="out">已退役</option>
@@ -271,7 +280,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
         <label>附加費用(客製加工、後續工資,計入此零件的總花費)</label>
         <div id="addon-list"></div>
         <div class="addon-in">
-          <input id="a-add-t" placeholder="名目,例:和合加工 配DY外管">
+          <input id="a-add-t" placeholder="名目,例:加工費、工資">
           <input id="a-add-p" type="number" inputmode="numeric" placeholder="金額">
           <button onclick="addAddon()" title="加入附加費用">＋</button>
         </div>
@@ -285,11 +294,12 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
       <div class="hint">點下方清單的任一項目即可修改或刪除 · 資料會自動存在這台裝置的瀏覽器裡</div>
     </div>
 
-    <input class="search" id="q" placeholder="搜尋品牌或品項…" oninput="STATE.q=this.value;renderList()">
+    <input class="search" id="q" placeholder="搜尋品牌或品項…" oninput="STATE.q=this.value;resetPage();renderList()">
     <div class="filters" id="f-status"></div>
     <div class="filters" id="f-cat"></div>
 
     <div class="rows" id="rows"></div>
+    <div class="pager" id="pager" hidden></div>
     <div class="count-note" id="count-note"></div>
 
     <div class="data-box">
@@ -345,6 +355,12 @@ let NEXT_ID=0;
 
 let SWAP_ID=null,EDIT_ID=null,FORM_ADD=[],SHOW_EDIT=false,PHOTO_TARGET=null;
 const STATE={status:'all',cat:'all',q:''};
+const PAGE_SIZE=5;          // 紀錄模式清單每頁筆數
+let PAGE=1;
+const stamp=()=>Date.now();  // mt:最後修改時間,用於「最近修改」排序
+// 篩選或搜尋改變時回到第一頁
+function resetPage(){PAGE=1;}
+function goPage(p){PAGE=p;renderList();document.getElementById('rows').scrollIntoView({behavior:'smooth',block:'nearest'});}
 
 const today=()=>{const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')};
 const fmt=n=>'NT$ '+n.toLocaleString('zh-TW');
@@ -403,6 +419,7 @@ function applyData(d){
     if(!['on','out','wish'].includes(i.s))i.s='on';
     i.d=i.d||today();
     i.p=Math.max(0,parseInt(i.p)||0);
+    if(i.mt!=null)i.mt=Number(i.mt)||0;   // 最後修改時間,舊備份沒有此欄位
     if(i.add)i.add=i.add.filter(a=>a&&a.t).map(a=>({t:a.t,p:Math.max(0,parseInt(a.p)||0)}));
   });
   NEXT_ID=Math.max(0,d.nextId|0,...ITEMS.map(i=>(typeof i.id==='number'?i.id+1:0)));
@@ -458,32 +475,43 @@ function toast(msg){
   toastTimer=setTimeout(()=>el.classList.remove('on'),2600);
 }
 
-/* ══════════ 車名 ══════════ */
+/* ══════════ 車名(就地編輯) ══════════ */
 function renderName(){
   const nm=VEHICLE.name||'我的愛車';
-  const nameEl=document.getElementById('veh-name');
-  nameEl.textContent=nm;
-  nameEl.parentElement.classList.toggle('unset',!VEHICLE.name);
+  document.getElementById('veh-name').textContent=nm;
+  document.getElementById('veh-h1').classList.toggle('unset',!VEHICLE.name);
   document.getElementById('veh-sub').textContent=VEHICLE.sub||'BUILD SHEET';
   document.getElementById('foot').textContent=VEHICLE.sub||'BUILD SHEET · MOD LEDGER';
   document.title=nm+' BUILD SHEET';
 }
-function openNameEdit(){
-  document.getElementById('v-name').value=VEHICLE.name;
-  document.getElementById('v-sub').value=VEHICLE.sub;
-  document.getElementById('veh-view').hidden=true;
-  document.getElementById('veh-edit').hidden=false;
-  document.getElementById('v-name').focus();
-}
-function cancelName(){
-  document.getElementById('veh-edit').hidden=true;
-  document.getElementById('veh-view').hidden=false;
-}
-function saveName(){
-  VEHICLE.name=document.getElementById('v-name').value.trim();
-  VEHICLE.sub=document.getElementById('v-sub').value.trim();
-  cancelName();renderName();renderShow();save();
-  toast('車名已更新');
+
+let INLINE_BUSY=false;
+function editInline(field){
+  if(INLINE_BUSY)return;
+  INLINE_BUSY=true;
+  const sp=document.getElementById(field==='name'?'veh-name':'veh-sub');
+  const inp=document.getElementById(field==='name'?'veh-name-in':'veh-sub-in');
+  inp.value=field==='name'?VEHICLE.name:VEHICLE.sub;
+  sp.hidden=true;inp.hidden=false;
+  inp.focus();inp.select();
+  const finish=commit=>{
+    if(!INLINE_BUSY)return;
+    INLINE_BUSY=false;
+    inp.onkeydown=null;inp.onblur=null;
+    inp.hidden=true;sp.hidden=false;
+    if(!commit)return;
+    const v=inp.value.trim();
+    const old=field==='name'?VEHICLE.name:VEHICLE.sub;
+    if(v===old)return;
+    if(field==='name')VEHICLE.name=v;else VEHICLE.sub=v;
+    renderName();renderShow();save();
+    toast(field==='name'?'車名已更新':'標語已更新');
+  };
+  inp.onkeydown=e=>{
+    if(e.key==='Enter'){e.preventDefault();finish(true);}
+    else if(e.key==='Escape'){e.preventDefault();finish(false);}
+  };
+  inp.onblur=()=>finish(true);
 }
 
 /* ══════════ 圖片 ══════════ */
@@ -560,9 +588,9 @@ function renderBars(){
 function renderFilters(){
   const st=[['all','全部',''],['on','現役',''],['out','已退役','gray'],['wish','願望清單','gold']];
   document.getElementById('f-status').innerHTML=st.map(([k,label,cls])=>
-    `<button class="chip ${cls} ${STATE.status===k?'on':''}" onclick="STATE.status='${k}';renderFilters();renderList()">${label}</button>`).join('');
+    `<button class="chip ${cls} ${STATE.status===k?'on':''}" onclick="STATE.status='${k}';resetPage();renderFilters();renderList()">${label}</button>`).join('');
   document.getElementById('f-cat').innerHTML=['all',...CATS].map(c=>
-    `<button class="chip ${STATE.cat===c?'on':''}" onclick="STATE.cat='${c}';renderFilters();renderList()">${c==='all'?'所有分類':c}</button>`).join('');
+    `<button class="chip ${STATE.cat===c?'on':''}" onclick="STATE.cat='${c}';resetPage();renderFilters();renderList()">${c==='all'?'所有分類':c}</button>`).join('');
 }
 
 function renderList(){
@@ -571,9 +599,10 @@ function renderList(){
   if(!ITEMS.length){
     rowsEl.className='empty';
     rowsEl.innerHTML=`<span class="big">還沒有任何項目</span>
-      1. 先按上方的 <b>✎ 車名</b> 設定你的車<br>
+      1. 點上方的<b>車名文字</b>即可直接修改<br>
       2. 用上面的表單新增第一件改裝品<br>
       3. 資料會自動存在這台裝置,記得偶爾<b>匯出備份</b>`;
+    document.getElementById('pager').hidden=true;
     noteEl.textContent='';
     return;
   }
@@ -582,16 +611,40 @@ function renderList(){
   const list=ITEMS.filter(i=>
     (STATE.status==='all'||i.s===STATE.status)&&
     (STATE.cat==='all'||i.c===STATE.cat)&&
-    (!q||(i.b+i.n).toLowerCase().includes(q)));
-  rowsEl.innerHTML=list.length?list.map(i=>`
+    (!q||(i.b+i.n).toLowerCase().includes(q)))
+    // 最近修改的排前面;舊資料沒有 mt,用 id 遞補(id 越大越新)
+    .sort((a,b)=>(b.mt||0)-(a.mt||0)||b.id-a.id);
+  const pages=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
+  if(PAGE>pages)PAGE=pages;
+  const shown=list.slice((PAGE-1)*PAGE_SIZE,PAGE*PAGE_SIZE);
+  rowsEl.innerHTML=list.length?shown.map(i=>`
     <div class="row ${i.s} ${i.id===EDIT_ID?'editing':''}" onclick="editItem(${i.id})">
       <span class="dot ${i.s}"></span>
       <div><div class="name"><b>${esc(i.b)}</b>${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</div>
         <div class="meta">${i.c}${i.pos?'·'+POS_NAME[i.pos]:''} · ${ST_NAME[i.s]} · ${i.d}${addSum(i)?` · 本體 ${fmt(i.p)} + 附加 ${fmt(addSum(i))}`:''}${i.rec?` · 回收 ${fmt(i.rec)}`:''}</div></div>
       <div class="price ${itemTotal(i)?'':'tbd'}">${itemTotal(i)?fmt(itemTotal(i)):'未定價'}</div>
     </div>`).join(''):'<div class="row"><span></span><div class="name" style="color:var(--sub)">沒有符合的項目 — 換個條件試試</div><div></div></div>';
+  renderPager(pages,list.length);
   const priced=list.filter(i=>itemTotal(i)>0);
   noteEl.textContent=`共 ${list.length} 項 · 小計 ${fmt(sum(priced))}${list.length-priced.length?` · 另有 ${list.length-priced.length} 項未定價`:''}`;
+}
+
+function renderPager(pages,total){
+  const el=document.getElementById('pager');
+  if(pages<=1){el.hidden=true;el.innerHTML='';return;}
+  el.hidden=false;
+  const from=(PAGE-1)*PAGE_SIZE+1,to=Math.min(PAGE*PAGE_SIZE,total);
+  // 頁碼視窗:目前頁前後各一頁,首尾恆顯示,中間以 … 省略
+  const nums=[];
+  for(let p=1;p<=pages;p++){
+    if(p===1||p===pages||Math.abs(p-PAGE)<=1)nums.push(p);
+    else if(nums[nums.length-1]!=='…')nums.push('…');
+  }
+  el.innerHTML=`
+    <button class="pg" onclick="goPage(${PAGE-1})" ${PAGE===1?'disabled':''} title="上一頁">‹</button>
+    ${nums.map(n=>n==='…'?'<span class="pg-gap">…</span>':`<button class="pg ${n===PAGE?'on':''}" onclick="goPage(${n})">${n}</button>`).join('')}
+    <button class="pg" onclick="goPage(${PAGE+1})" ${PAGE===pages?'disabled':''} title="下一頁">›</button>
+    <span class="pg-info">${from}–${to} / ${total}</span>`;
 }
 
 function saveItem(){
@@ -602,6 +655,7 @@ function saveItem(){
   const c=document.getElementById('a-cat').value,s=document.getElementById('a-status').value;
   const d=document.getElementById('a-date').value||today();
   const pos=document.getElementById('a-pos').value||undefined;
+  const mt=stamp();
   if(SWAP_ID!==null){
     // 汰換:舊件退役(記回收金額),新件以現役入帳
     const old=ITEMS.find(i=>i.id===SWAP_ID);
@@ -609,14 +663,16 @@ function saveItem(){
       old.s='out';
       old.rec=Math.max(0,parseInt(document.getElementById('a-rec').value)||0);
       old.v=false; // 退役品預設不放進展示頁,想放再去展示模式點亮
+      old.mt=mt;
     }
-    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s:'on',d,pos,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s:'on',d,pos,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
   }else if(EDIT_ID===null){
-    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s,d,pos,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s,d,pos,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
   }else{
     const it=ITEMS.find(i=>i.id===EDIT_ID);
-    if(it)Object.assign(it,{b,n,p,c,s,d,pos,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+    if(it)Object.assign(it,{b,n,p,c,s,d,pos,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
   }
+  resetPage();          // 剛動過的項目會排在第一頁最前面
   resetForm();renderAll();
 }
 
@@ -696,11 +752,11 @@ function renderShow(){
     <h2>${esc(VEHICLE.name||'我的愛車')}</h2>
     <div class="en">${esc(VEHICLE.sub||'Build Sheet')}</div>
     ${LAYOUT.cover?`<img class="cover" src="${LAYOUT.cover}" alt="" onclick="openLightbox(this.src)">`:''}
-    <div class="big"><div class="k">現役改裝零件</div><div class="v">${s.on.length}<span style="font-size:18px;color:var(--sub);font-weight:500"> 件</span></div></div>
-    <div class="sub-stats">
-      <div><div class="k">合作品牌</div><div class="v">${brands.size} 家</div></div>
-      <div><div class="k">涵蓋系統</div><div class="v">${sysCount} 大類</div></div>
-      <div><div class="k">歷經退役</div><div class="v">${s.out.length} 件</div></div>
+    <div class="plate-stats">
+      <div class="ps big"><div class="k">現役改裝零件</div><div class="v">${s.on.length}<span style="font-size:18px;color:var(--sub);font-weight:500"> 件</span></div></div>
+      <div class="ps"><div class="k">合作品牌</div><div class="v">${brands.size} 家</div></div>
+      <div class="ps"><div class="k">涵蓋系統</div><div class="v">${sysCount} 大類</div></div>
+      <div class="ps"><div class="k">歷經退役</div><div class="v">${s.out.length} 件</div></div>
     </div>`;
 
   const secOrder=LAYOUT.catOrder;
@@ -816,8 +872,6 @@ function renderAll(){renderName();renderStats();renderBars();renderFilters();ren
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
 document.getElementById('a-date').value=today();
-document.getElementById('v-name').addEventListener('keydown',e=>{if(e.key==='Enter')saveName();if(e.key==='Escape')cancelName()});
-document.getElementById('v-sub').addEventListener('keydown',e=>{if(e.key==='Enter')saveName();if(e.key==='Escape')cancelName()});
 loadSaved();
 renderAll();
 doSave();
