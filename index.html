@@ -150,6 +150,8 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .save-state{font-size:11.5px;color:var(--sub);margin-top:12px;line-height:1.7}
 .save-state.fail{color:#E08A8A}
 .data-hint{font-size:11.5px;color:var(--sub);margin-top:10px;line-height:1.7}
+.dl-link{display:block;margin-top:8px;color:var(--manx);text-decoration:underline;text-underline-offset:3px;cursor:pointer;width:fit-content}
+.dl-link:active{opacity:.6}
 
 /* ── 備份提醒 ── */
 .bk-note{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#241F14;border:1px solid #5A4A26;border-radius:12px;padding:12px 14px;margin-bottom:18px}
@@ -516,9 +518,20 @@ function snoozeBackup(){BK_SNOOZE=Date.now();doSave();renderBackupNote();}
 
 function renderDataHint(){
   const el=document.getElementById('data-hint');
-  el.textContent=canShareBackup()
-    ?'按「備份資料」會跳出分享選單,可以傳到 LINE 給自己、存進雲端硬碟或存成檔案。換手機時在新手機按「還原資料」選那個檔案,就能把紀錄搬過去。'
-    :'按「備份資料」會把紀錄存成一個檔案(這台裝置不支援系統分享選單,所以是直接下載)。換手機時在新手機按「還原資料」選那個檔案,就能把紀錄搬過去。';
+  if(canShareBackup()){
+    // 有分享選單的裝置額外給一條直接下載的退路
+    el.innerHTML='按「備份資料」會跳出分享選單,可以傳到 LINE 給自己、存進雲端硬碟或存成檔案。'
+      +'換手機時在新手機按「還原資料」選那個檔案,就能把紀錄搬過去。'
+      +'<a class="dl-link" id="dl-link" onclick="downloadBackupOnly()">不想用分享選單?改為直接下載檔案</a>';
+  }else{
+    el.textContent='按「備份資料」會把紀錄存成一個檔案(這台裝置不支援系統分享選單,所以是直接下載)。'
+      +'換手機時在新手機按「還原資料」選那個檔案,就能把紀錄搬過去。';
+  }
+}
+
+// 跳過分享選單,直接下載檔案
+function downloadBackupOnly(){
+  downloadBackup(JSON.stringify(snapshot(),null,2),bkFileName());
 }
 
 function importData(inp){
