@@ -317,7 +317,9 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
         把施工清單整段貼進來,一次加入多筆。<br>
         · 單獨一行寫<b>分類</b>(制動／懸吊／動力／外觀／其他)可切換後面項目的分類<br>
         · 項目寫成 <b>品牌 品項名稱 金額</b>,沒有品牌就直接寫品項<br>
-        · 開頭可加 <b>日期</b> 與 <b>里程</b>,省略就用今天
+        · 開頭可加 <b>日期</b> 與 <b>里程</b>,省略就用今天<br>
+        · 多字品牌(如 Shark Factory)會自動比對你用過的品牌;<br>
+        　全新的品牌可寫成 <b>品牌 | 品項 金額</b> 明確分隔
       </div>
       <textarea id="batch-in" rows="9" placeholder="日期 2026/08/22
 里程 40000
@@ -760,8 +762,42 @@ function clearBatch(){
   renderBatchPreview();
 }
 
+// 從既有資料學到的品牌清單。多字品牌(Shark Factory、Light Speed…)光靠空白
+// 切不開,比對已知品牌才切得準,而且用得越久越準。長的排前面,避免
+// 「Shark」搶在「Shark Factory」之前先match。
+function knownBrands(){
+  const set=new Set();
+  ITEMS.forEach(i=>{if(i.b&&i.b!=='—')set.add(i.b)});
+  return[...set].sort((a,b)=>b.length-a.length);
+}
+
+// 從一行文字裡切出品牌與品項
+function splitBrandName(text,brands){
+  // 1) 使用者用 | 明確分隔時,完全照他寫的
+  const bar=text.indexOf('|');
+  if(bar>-1){
+    const b=text.slice(0,bar).trim(),n=text.slice(bar+1).trim();
+    if(b&&n)return{b,n};
+  }
+  // 2) 比對已知品牌(不分大小寫,並沿用原本的大小寫寫法)
+  const low=text.toLowerCase();
+  for(const b of brands){
+    const bl=b.toLowerCase();
+    // 後面必須接空白,否則 DY 會誤中 DYNAMO
+    if(low.startsWith(bl)&&(text.length===b.length||/\s/.test(text[b.length]))){
+      const rest=text.slice(b.length).trim();
+      if(rest)return{b,n:rest};
+    }
+  }
+  // 3) 都沒中就用空白切,第一段當品牌
+  const parts=text.split(/\s+/);
+  if(parts.length>=2)return{b:parts[0],n:parts.slice(1).join(' ')};
+  return{b:'—',n:text};
+}
+
 // 把貼上的文字解析成項目清單。規則刻意寬鬆,解析完一定要讓使用者過目。
 function parseBatchText(raw){
+  const brands=knownBrands();
   const items=[],warnings=[],meta={d:'',km:0};
   let cat=null;
   raw.split(/\r?\n/).forEach((line,idx)=>{
@@ -790,9 +826,7 @@ function parseBatchText(raw){
     if(parts.length>1&&/^\d+$/.test(tail)){p=parseInt(tail);parts.pop();}
     else warnings.push('第 '+no+' 行沒看到金額,先當未定價:'+s);
 
-    let b='—',n='';
-    if(parts.length>=2){b=parts[0];n=parts.slice(1).join(' ');}
-    else n=parts[0]||'';
+    const{b,n}=splitBrandName(parts.join(' '),brands);
     if(!n){warnings.push('第 '+no+' 行看不出品項,已略過');return;}
     if(!cat)warnings.push('第 '+no+' 行前面沒有分類,先歸到「其他」:'+n);
 
