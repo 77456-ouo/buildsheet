@@ -321,7 +321,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
         <button onclick="document.getElementById('import-file').click()">⬆ 還原資料</button>
         <button class="danger" onclick="clearAll()">🗑 清空全部</button>
       </div>
-      <div class="data-hint">按「備份資料」會跳出分享選單,可以傳到 LINE 給自己、存進雲端硬碟或存成檔案。換手機時在新手機按「還原資料」選那個檔案就能把紀錄搬過去。</div>
+      <div class="data-hint" id="data-hint"></div>
       <div class="save-state" id="save-state"></div>
     </div>
   </div>
@@ -346,7 +346,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
 <div hidden>
   <input type="file" id="a-cover" accept="image/*" onchange="pickCover(this)">
   <input type="file" id="item-photo-input" accept="image/*" onchange="onItemPhotoChosen(this)">
-  <input type="file" id="import-file" accept="application/json,.json" onchange="importData(this)">
+  <input type="file" id="import-file" accept=".txt,.json,text/plain,application/json" onchange="importData(this)">
 </div>
 
 <script>
@@ -445,12 +445,25 @@ function applyData(d){
   BK_SNOOZE=Number(d.bkSnooze)||0;
 }
 
+/* 備份檔用 .txt 而非 .json:Chromium 的 Web Share 只允許白名單內的檔案類型
+   (音訊、圖片、PDF、影片、文字),.json 不在其中,用 .json 會導致手機分享失敗。
+   內容仍是 JSON 文字,還原時照樣解析得回來。 */
+const BK_MIME='text/plain';
+const bkFileName=()=>(VEHICLE.name||'改裝帳本')+'_備份_'+today()+'.txt';
+
+function canShareBackup(){
+  try{
+    return !!(navigator.canShare&&
+      navigator.canShare({files:[new File(['{}'],'t.txt',{type:BK_MIME})]}));
+  }catch(e){return false}
+}
+
 async function exportData(){
   const data=JSON.stringify(snapshot(),null,2);
-  const name=(VEHICLE.name||'改裝帳本')+'_備份_'+today()+'.json';
-  // 手機優先:叫出系統分享選單,可直接存到 LINE Keep、雲端硬碟或檔案 App
+  const name=bkFileName();
+  // 手機優先:叫出系統分享選單,可直接存到 LINE、雲端硬碟或檔案 App
   try{
-    const file=new File([data],name,{type:'application/json'});
+    const file=new File([data],name,{type:BK_MIME});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       await navigator.share({files:[file],title:'改裝帳本備份'});
       markBackedUp('已分享備份 · '+ITEMS.length+' 筆');
@@ -463,7 +476,7 @@ async function exportData(){
 }
 
 function downloadBackup(data,name){
-  const url=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  const url=URL.createObjectURL(new Blob([data],{type:BK_MIME}));
   const a=document.createElement('a');
   a.href=url;a.download=name;
   document.body.appendChild(a);a.click();a.remove();
@@ -500,6 +513,13 @@ function renderBackupNote(){
 }
 
 function snoozeBackup(){BK_SNOOZE=Date.now();doSave();renderBackupNote();}
+
+function renderDataHint(){
+  const el=document.getElementById('data-hint');
+  el.textContent=canShareBackup()
+    ?'按「備份資料」會跳出分享選單,可以傳到 LINE 給自己、存進雲端硬碟或存成檔案。換手機時在新手機按「還原資料」選那個檔案,就能把紀錄搬過去。'
+    :'按「備份資料」會把紀錄存成一個檔案(這台裝置不支援系統分享選單,所以是直接下載)。換手機時在新手機按「還原資料」選那個檔案,就能把紀錄搬過去。';
+}
 
 function importData(inp){
   const f=inp.files&&inp.files[0];
@@ -932,7 +952,7 @@ function setMode(m){
   window.scrollTo({top:0});
 }
 
-function renderAll(){renderName();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();}
+function renderAll(){renderName();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();renderDataHint();}
 
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
