@@ -22,6 +22,8 @@
   --tc:'Noto Sans TC',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
+/* hidden 屬性必須勝過元素自己的 display,否則 display:flex 會讓隱藏失效 */
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--tc);line-height:1.55;padding-bottom:80px}
 .wrap{max-width:860px;margin:0 auto;padding:0 16px}
@@ -147,6 +149,15 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .data-btns .danger{color:#E08A8A;border-color:#5A2E2E;background:#2A1A1A}
 .save-state{font-size:11.5px;color:var(--sub);margin-top:12px;line-height:1.7}
 .save-state.fail{color:#E08A8A}
+.data-hint{font-size:11.5px;color:var(--sub);margin-top:10px;line-height:1.7}
+
+/* ── 備份提醒 ── */
+.bk-note{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#241F14;border:1px solid #5A4A26;border-radius:12px;padding:12px 14px;margin-bottom:18px}
+.bk-note .t{flex:1;min-width:170px;font-size:12.5px;color:var(--gold);line-height:1.6}
+.bk-note button{appearance:none;font-family:var(--tc);font-size:12.5px;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.bk-note .go{background:var(--gold);border:none;color:#241C08;font-weight:700}
+.bk-note .later{background:transparent;border:1px solid #5A4A26;color:var(--sub)}
+.bk-note button:active{transform:translateY(1px)}
 
 /* ── showcase ── */
 .plate{position:relative;border:1px solid var(--line);border-radius:16px;background:
@@ -258,6 +269,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
   <!-- ═══════════ 紀錄模式 ═══════════ -->
   <div id="view-rec" class="view on">
     <div class="stats" id="stats"></div>
+    <div class="bk-note" id="bk-note" hidden></div>
     <div class="bars" id="bars"></div>
 
     <div class="addbox" id="addbox">
@@ -305,10 +317,11 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
     <div class="data-box">
       <h3>資料管理</h3>
       <div class="data-btns">
-        <button onclick="exportData()">⬇ 匯出備份</button>
-        <button onclick="document.getElementById('import-file').click()">⬆ 匯入備份</button>
+        <button onclick="exportData()">⬇ 備份資料</button>
+        <button onclick="document.getElementById('import-file').click()">⬆ 還原資料</button>
         <button class="danger" onclick="clearAll()">🗑 清空全部</button>
       </div>
+      <div class="data-hint">按「備份資料」會跳出分享選單,可以傳到 LINE 給自己、存進雲端硬碟或存成檔案。換手機時在新手機按「還原資料」選那個檔案就能把紀錄搬過去。</div>
       <div class="save-state" id="save-state"></div>
     </div>
   </div>
@@ -352,6 +365,9 @@ let ITEMS=[];
 let TUNE=[];
 let LAYOUT={catOrder:[...CATS],wish:true,tune:true,cover:null};
 let NEXT_ID=0;
+let BK=0;         // 最後一次備份的時間
+let BK_SNOOZE=0;  // 備份提醒按「稍後再說」的時間
+const DAY=86400000;
 
 let SWAP_ID=null,EDIT_ID=null,FORM_ADD=[],SHOW_EDIT=false,PHOTO_TARGET=null;
 const STATE={status:'all',cat:'all',q:''};
@@ -370,7 +386,7 @@ const sum=a=>a.reduce((t,i)=>t+itemTotal(i),0);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ══════════ 儲存 / 讀取 / 匯出入 ══════════ */
-function snapshot(){return{v:SCHEMA,savedAt:new Date().toISOString(),vehicle:VEHICLE,items:ITEMS,tune:TUNE,layout:LAYOUT,nextId:NEXT_ID}}
+function snapshot(){return{v:SCHEMA,savedAt:new Date().toISOString(),vehicle:VEHICLE,items:ITEMS,tune:TUNE,layout:LAYOUT,nextId:NEXT_ID,bk:BK,bkSnooze:BK_SNOOZE}}
 
 let saveTimer=null;
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(doSave,400)}
@@ -388,9 +404,10 @@ function setSaveState(ok,err){
   el.classList.toggle('fail',!ok);
   if(ok){
     const kb=Math.round((localStorage.getItem(STORE_KEY)||'').length/1024);
-    el.textContent='✔ 已自動儲存在這台裝置的瀏覽器('+kb+' KB) · 換手機或清除瀏覽資料就會不見,重要的話請按「匯出備份」留一份檔案。';
+    const last=BK?'上次備份 '+new Date(BK).toLocaleDateString('zh-TW'):'尚未備份過';
+    el.textContent='✔ 已自動儲存在這台裝置的瀏覽器('+kb+' KB) · '+last+' · 換手機或清除瀏覽資料就會不見,重要的話請按「備份資料」留一份。';
   }else{
-    el.textContent='⚠ 儲存失敗:瀏覽器空間已滿(通常是照片太多)。請先按「匯出備份」把資料存成檔案,再移除幾張照片。錯誤:'+(err&&err.name||'unknown');
+    el.textContent='⚠ 儲存失敗:瀏覽器空間已滿(通常是照片太多)。請先按「備份資料」把內容存起來,再移除幾張照片。錯誤:'+(err&&err.name||'unknown');
   }
 }
 
@@ -424,18 +441,65 @@ function applyData(d){
   });
   NEXT_ID=Math.max(0,d.nextId|0,...ITEMS.map(i=>(typeof i.id==='number'?i.id+1:0)));
   ITEMS.forEach(i=>{if(typeof i.id!=='number')i.id=NEXT_ID++});
+  BK=Number(d.bk)||0;
+  BK_SNOOZE=Number(d.bkSnooze)||0;
 }
 
-function exportData(){
+async function exportData(){
   const data=JSON.stringify(snapshot(),null,2);
-  const blob=new Blob([data],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
+  const name=(VEHICLE.name||'改裝帳本')+'_備份_'+today()+'.json';
+  // 手機優先:叫出系統分享選單,可直接存到 LINE Keep、雲端硬碟或檔案 App
+  try{
+    const file=new File([data],name,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'改裝帳本備份'});
+      markBackedUp('已分享備份 · '+ITEMS.length+' 筆');
+      return;
+    }
+  }catch(e){
+    if(e&&e.name==='AbortError')return;   // 使用者自己取消,不要再彈下載
+  }
+  downloadBackup(data,name);              // 桌機或不支援分享時的退路
+}
+
+function downloadBackup(data,name){
+  const url=URL.createObjectURL(new Blob([data],{type:'application/json'}));
   const a=document.createElement('a');
-  a.href=url;a.download=(VEHICLE.name||'改裝帳本')+'_備份_'+today()+'.json';
+  a.href=url;a.download=name;
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),2000);
-  toast('已匯出 '+ITEMS.length+' 筆資料');
+  markBackedUp('已下載備份 · '+ITEMS.length+' 筆');
 }
+
+function markBackedUp(msg){
+  BK=Date.now();BK_SNOOZE=0;
+  doSave();renderBackupNote();
+  toast(msg);
+}
+
+/* ── 備份提醒 ── */
+function backupHint(){
+  if(!ITEMS.length)return '';
+  if(BK_SNOOZE&&Date.now()-BK_SNOOZE<7*DAY)return '';
+  if(!BK)return ITEMS.length>=5
+    ?'你還沒備份過。資料只存在這台裝置,換手機或清除瀏覽資料就會消失。':'';
+  const newest=Math.max(0,...ITEMS.map(i=>i.mt||0));
+  if(newest<=BK)return '';                       // 上次備份後沒有異動
+  const days=Math.floor((Date.now()-BK)/DAY);
+  return days>=14?`距離上次備份已經 ${days} 天,期間有新的異動。`:'';
+}
+
+function renderBackupNote(){
+  const el=document.getElementById('bk-note');
+  const msg=backupHint();
+  if(!msg){el.hidden=true;el.innerHTML='';return;}
+  el.hidden=false;
+  el.innerHTML=`<span class="t">${msg}</span>
+    <button class="go" onclick="exportData()">立即備份</button>
+    <button class="later" onclick="snoozeBackup()">稍後再說</button>`;
+}
+
+function snoozeBackup(){BK_SNOOZE=Date.now();doSave();renderBackupNote();}
 
 function importData(inp){
   const f=inp.files&&inp.files[0];
@@ -445,19 +509,20 @@ function importData(inp){
   r.onload=e=>{
     let d;
     try{d=JSON.parse(e.target.result)}
-    catch(err){alert('匯入失敗:這不是有效的 JSON 檔案。');return}
+    catch(err){alert('還原失敗:這個檔案不是改裝帳本的備份。');return}
     const n=Array.isArray(d.items)?d.items.length:0;
-    if(!confirm('即將匯入 '+n+' 筆資料,並「覆蓋」目前所有內容。\n\n建議先按「匯出備份」留一份。確定要繼續嗎?'))return;
+    if(!confirm('即將還原 '+n+' 筆資料,並「覆蓋」目前所有內容。\n\n如果現在的紀錄還沒備份,建議先取消並按「備份資料」。確定要繼續嗎?'))return;
     try{applyData(d)}
-    catch(err){alert('匯入失敗:'+err.message);return}
+    catch(err){alert('還原失敗:'+err.message);return}
+    BK=Date.now();BK_SNOOZE=0;      // 剛從備份檔還原,視同手上已有備份
     resetForm();renderAll();doSave();
-    toast('已匯入 '+ITEMS.length+' 筆資料');
+    toast('已還原 '+ITEMS.length+' 筆資料');
   };
   r.readAsText(f);
 }
 
 function clearAll(){
-  if(!confirm('確定要清空全部資料嗎?\n\n所有零件、照片、車名與版面設定都會刪除,無法復原。\n建議先按「匯出備份」。'))return;
+  if(!confirm('確定要清空全部資料嗎?\n\n所有零件、照片、車名與版面設定都會刪除,無法復原。\n建議先按「備份資料」。'))return;
   if(!confirm('再確認一次 — 真的要全部清空?'))return;
   VEHICLE={name:'',sub:''};ITEMS=[];TUNE=[];NEXT_ID=0;
   LAYOUT={catOrder:[...CATS],wish:true,tune:true,cover:null};
@@ -601,7 +666,7 @@ function renderList(){
     rowsEl.innerHTML=`<span class="big">還沒有任何項目</span>
       1. 點上方的<b>車名文字</b>即可直接修改<br>
       2. 用上面的表單新增第一件改裝品<br>
-      3. 資料會自動存在這台裝置,記得偶爾<b>匯出備份</b>`;
+      3. 資料會自動存在這台裝置,記得偶爾<b>備份資料</b>`;
     document.getElementById('pager').hidden=true;
     noteEl.textContent='';
     return;
@@ -867,7 +932,7 @@ function setMode(m){
   window.scrollTo({top:0});
 }
 
-function renderAll(){renderName();renderStats();renderBars();renderFilters();renderList();renderShow();}
+function renderAll(){renderName();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();}
 
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
