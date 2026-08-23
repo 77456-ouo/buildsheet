@@ -343,8 +343,8 @@ Brembo 基本對四保養 1200
         </select></div>
         <div><label>日期</label><input id="a-date" type="date"></div>
         <div><label>里程（km）</label><input id="a-km" type="number" inputmode="numeric" placeholder="選填"></div>
-        <div><label>位置（展示排版用）</label><select id="a-pos">
-          <option value="">不分區</option><option value="F">前段</option><option value="R">後段</option>
+        <div id="a-pos-row"><label>位置（展示排版用）</label><select id="a-pos">
+          <option value="">不分區</option><option value="F">前半段</option><option value="R">後半段</option>
         </select></div>
       </div>
       <div class="addon-box">
@@ -413,7 +413,28 @@ Brembo 基本對四保養 1200
 const CATS=['制動','懸吊','動力','外觀','其他'];
 const CAT_EN={制動:'Brake',懸吊:'Suspension',動力:'Powertrain',外觀:'Body & Parts',其他:'Misc'};
 const ST_NAME={on:'現役',out:'退役',wish:'願望清單'};
-const POS_NAME={F:'前段',R:'後段'};
+const POS_NAME={F:'前段',R:'後段'};       // 通用說法，給沒有專屬說法的分類用
+const POS_EN={F:'Front',R:'Rear'};
+// 目前只有外觀需要分段：車殼講的是前後半段。其他分類用不到，表單就不顯示位置欄位。
+// 日後想讓別的分類也能分段，在這裡加一筆就好。
+const POS_CATS={外觀:{F:['前半段','Front Half'],R:['後半段','Rear Half']}};
+
+// 某個分類的某個位置該怎麼稱呼，回傳［中文, 英文］
+function posLabel(cat,pz){
+  const m=POS_CATS[cat];
+  return m&&m[pz]?m[pz]:[POS_NAME[pz],POS_EN[pz]];
+}
+
+// 位置欄位只在需要的時候出現：分類是外觀，或這筆本來就填過位置。
+// 後者是為了讓舊資料改得到，不要變成看不見又清不掉的狀態。
+function syncPosField(){
+  const c=document.getElementById('a-cat').value;
+  const sel=document.getElementById('a-pos');
+  const m=POS_CATS[c];
+  sel.options[1].textContent=m?m.F[0]:POS_NAME.F;
+  sel.options[2].textContent=m?m.R[0]:POS_NAME.R;
+  document.getElementById('a-pos-row').hidden=!m&&!sel.value;
+}
 // 舊分類 → 新大分類的對應表（之後想再調整分類定義，改這裡就好）
 const LEGACY={傳動:'動力',燈電:'外觀',操控:'外觀'};
 const STORE_KEY='buildsheet.v1';
@@ -944,7 +965,7 @@ function renderList(){
     <div class="row ${i.s} ${i.id===EDIT_ID?'editing':''}" onclick="editItem(${i.id})">
       <span class="dot ${i.s}"></span>
       <div><div class="name"><b>${esc(i.b)}</b>${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</div>
-        <div class="meta">${i.c}${i.pos?'·'+POS_NAME[i.pos]:''} · ${ST_NAME[i.s]} · ${i.d}${i.km?` · ${i.km.toLocaleString('zh-TW')} km`:''}${addSum(i)?` · 本體 ${fmt(i.p)} + 附加 ${fmt(addSum(i))}`:''}</div></div>
+        <div class="meta">${i.c}${i.pos?'·'+posLabel(i.c,i.pos)[0]:''} · ${ST_NAME[i.s]} · ${i.d}${i.km?` · ${i.km.toLocaleString('zh-TW')} km`:''}${addSum(i)?` · 本體 ${fmt(i.p)} + 附加 ${fmt(addSum(i))}`:''}</div></div>
       <div class="price ${itemTotal(i)?'':'tbd'}">${itemTotal(i)?fmt(itemTotal(i)):'未定價'}</div>
     </div>`).join(''):'<div class="row"><span></span><div class="name" style="color:var(--sub)">沒有符合的項目 — 換個條件試試</div><div></div></div>';
   renderPager(pages,list.length);
@@ -1010,6 +1031,7 @@ function editItem(id){
   document.getElementById('a-status').value=it.s;
   document.getElementById('a-date').value=it.d;
   document.getElementById('a-pos').value=it.pos||'';
+  syncPosField();
   document.getElementById('a-km').value=it.km||'';
   FORM_ADD=(it.add||[]).map(a=>({...a}));renderAddons();
   document.getElementById('form-title').textContent='✎ 編輯：'+it.n;
@@ -1032,6 +1054,7 @@ function startSwap(){
   document.getElementById('a-status').value='on';
   document.getElementById('a-date').value=today();
   document.getElementById('a-pos').value=old.pos||'';
+  syncPosField();
   document.getElementById('a-km').value='';
   FORM_ADD=[];renderAddons();
   document.getElementById('form-title').textContent='⇄ 汰換「'+old.n+'」— 填入新零件';
@@ -1055,6 +1078,7 @@ function resetForm(){
   ['a-brand','a-name','a-price','a-km','a-add-t','a-add-p'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('a-date').value=today();
   document.getElementById('a-pos').value='';
+  syncPosField();
   document.getElementById('form-title').textContent='＋ 新增項目';
   document.getElementById('btn-save').textContent='加入清單';
   document.getElementById('btn-cancel').hidden=true;
@@ -1088,7 +1112,7 @@ function renderShow(){
     const post=c==='懸吊'?tuneCard():'';
     return `<div class="sec">
       <div class="sec-head"><h3>${c}<span class="en">　${CAT_EN[c]}</span></h3><span>${secTools}<span class="sum">　${vis.length} 件</span></span></div>
-      ${posGrouped(list)}</div>`+post;
+      ${posGrouped(list,c)}</div>`+post;
   }).join('');
   document.getElementById('show-secs').innerHTML=secsHtml||
     `<div class="empty"><span class="big">展示頁還是空的</span>
@@ -1135,13 +1159,13 @@ function groupSec(status,title,en,cls,visible){
     ${list.map(catRow).join('')}</div>`;
 }
 
-function posGrouped(list){
+function posGrouped(list,cat){
   if(!list.some(i=>i.pos))return list.map(catRow).join('');
-  const POS_EN={F:'Front',R:'Rear','':''};
   return['F','R',''].map(pz=>{
     const g=list.filter(i=>(i.pos||'')===pz);
     if(!g.length)return'';
-    const label=pz?`<div class="sub-div">${POS_NAME[pz]}　${POS_EN[pz]}</div>`:(g.length===list.length?'':'<div class="sub-div">不分區</div>');
+    const[zh,en]=pz?posLabel(cat,pz):['',''];
+    const label=pz?`<div class="sub-div">${zh}　${en}</div>`:(g.length===list.length?'':'<div class="sub-div">不分區</div>');
     return label+g.map(catRow).join('');
   }).join('');
 }
@@ -1189,6 +1213,8 @@ function renderAll(){renderName();renderStats();renderBars();renderFilters();ren
 
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
+document.getElementById('a-cat').addEventListener('change',syncPosField);
+syncPosField();
 document.getElementById('a-date').value=today();
 loadSaved();
 renderAll();
