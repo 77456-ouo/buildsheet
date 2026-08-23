@@ -71,7 +71,6 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 /* ── bars ── */
 .bars{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px}
 .bars h3{font-size:13px;color:var(--sub);font-weight:500;letter-spacing:.1em;margin-bottom:12px}
-#bars h3 .bar-note{font-weight:500;font-size:11px;color:var(--sub);letter-spacing:0;margin-left:8px}
 .bar-row{display:grid;grid-template-columns:58px 1fr 84px;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
 .bar-track{height:8px;background:#0C110E;border-radius:4px;overflow:hidden}
 .bar-fill{height:100%;background:linear-gradient(90deg,var(--manx-deep),var(--manx));border-radius:4px}
@@ -364,6 +363,7 @@ Brembo 基本對四保養 1200
         <div class="full"><label>品項名稱</label><input id="a-name" placeholder="例：前土除"></div>
         <div id="a-cat-row"><label>分類</label><select id="a-cat"></select></div>
         <div><label>狀態</label><select id="a-status">
+          <!-- 選項由 syncFormFields 依分類重建，這裡只是初值 -->
           <option value="on">現役</option><option value="out">退役</option><option value="wish">願望清單</option>
         </select></div>
         <div><label>日期</label><input id="a-date" type="date"></div>
@@ -446,13 +446,13 @@ Brembo 基本對四保養 1200
 </div>
 
 <script>
-const CATS=['制動','懸吊','動力','外觀','其他','保養耗材'];
+const CATS=['保養耗材','制動','懸吊','動力','外觀','其他'];
 const CAT_EN={制動:'Brake',懸吊:'Suspension',動力:'Powertrain',外觀:'Body & Parts',其他:'Misc',保養耗材:'Service'};
 // 保養不進展示頁，所以不參與展示分節與整區排序
 const SHOW_CATS=CATS.filter(c=>c!=='保養耗材');
 const ST_NAME={on:'現役',out:'退役',wish:'願望清單'};
 // 保養耗材的狀態要換句話說：做過的叫已完成，還沒做的叫預定
-const SRV_ST={on:'已完成',wish:'預定'};
+const SRV_ST={on:'已完成',wish:'未完成'};
 function stName(i){return i.c==='保養耗材'&&SRV_ST[i.s]||ST_NAME[i.s];}
 const POS_NAME={F:'前段',R:'後段'};       // 通用說法，給沒有專屬說法的分類用
 const POS_EN={F:'Front',R:'Rear'};
@@ -467,17 +467,21 @@ function posLabel(cat,pz){
 }
 
 // 表單跟著分類調整：
-//   狀態 —— 保養講已完成／預定，不是現役／願望清單
+//   狀態 —— 保養耗材只有做過與沒做過，沒有退役這種事，所以整組選項重建
 //   位置 —— 只有外觀用得到；已經填過的舊資料也要看得到才改得掉
-function syncFormFields(){
+// wantStatus 是呼叫者希望選到的狀態；重建選項會清掉 select 原本的值，
+// 所以編輯既有項目時要把它傳進來。
+function syncFormFields(wantStatus){
   const cat=document.getElementById('a-cat');
   const st=document.getElementById('a-status');
   const sel=document.getElementById('a-pos');
   const srv=cat.value==='保養耗材';
-  // 用 value 定位，不靠選項順序 —— 順序一改，位置索引就會貼錯格
-  const opt=v=>[...st.options].find(o=>o.value===v);
-  opt('on').textContent=srv?'已完成':'現役';
-  opt('wish').textContent=srv?'預定要做':'願望清單';
+  // 重建而不是隱藏 option：手機的原生選單對 hidden option 支援不一致
+  const opts=srv?[['on','已完成'],['wish','未完成']]
+                :[['on','現役'],['out','退役'],['wish','願望清單']];
+  const cur=wantStatus||st.value;
+  st.innerHTML=opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+  st.value=opts.some(o=>o[0]===cur)?cur:'on';   // 退役的項目改成保養耗材時落到已完成
   const m=POS_CATS[cat.value];
   sel.options[1].textContent=m?m.F[0]:POS_NAME.F;
   sel.options[2].textContent=m?m.R[0]:POS_NAME.R;
@@ -955,13 +959,13 @@ function stats(){
         wish=ITEMS.filter(i=>i.s==='wish'&&part(i)),
         // 保養支出只算已經花掉的，預定要做的不算
         srv=ITEMS.filter(i=>i.c==='保養耗材'&&i.s!=='wish');
-  // spent 只算零件：歷史總投入 = 現役投入 + 退役投入，保養不墊高這個數字
-  return{on,out,wish,srv,spent:sum(on)+sum(out)};
+  // 歷史總投入 = 現役零件 + 退役零件 + 保養耗材，五個數字要對得起來
+  return{on,out,wish,srv,spent:sum(on)+sum(out)+sum(srv)};
 }
 
 function renderStats(){
-  // 退役只算當初的購入金額，不扣回收價；這樣三個數字才對得起來：
-  // 歷史總投入 = 現役零件 + 退役零件
+  // 退役只算當初的購入金額，不扣回收價；這樣數字才對得起來：
+  // 歷史總投入 = 現役零件 + 退役零件 + 保養耗材
   const s=stats();
   document.getElementById('stats').innerHTML=`
     <div class="stat total"><div class="k">歷史總投入</div><div class="v">${fmt(s.spent)}</div></div>
@@ -973,14 +977,15 @@ function renderStats(){
 
 function renderBars(){
   const el=document.getElementById('bars');
-  const rows=CATS.map(c=>({c,v:sum(ITEMS.filter(i=>i.c===c&&i.s!=='wish'))}))
-    .filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
+  const all=CATS.map(c=>({c,v:sum(ITEMS.filter(i=>i.c===c&&i.s!=='wish'))}))
+    .filter(r=>r.v>0);
+  // 保養耗材釘在最上面，其餘依金額由大到小
+  const rows=[...all.filter(r=>r.c==='保養耗材'),
+              ...all.filter(r=>r.c!=='保養耗材').sort((a,b)=>b.v-a.v)];
   if(!rows.length){el.hidden=true;el.innerHTML='';return;}
   el.hidden=false;
-  const max=rows[0].v;
-  // 保養也是一格，但它不算進歷史總投入，圖的總和會大於那個數字，要講明
-  const note=rows.some(r=>r.c==='保養耗材')?'<span class="bar-note">保養耗材不計入歷史總投入</span>':'';
-  el.innerHTML='<h3>各項投入（含退役）'+note+'</h3>'+rows.map(r=>`
+  const max=Math.max(...rows.map(r=>r.v));
+  el.innerHTML='<h3>各項投入（含退役）</h3>'+rows.map(r=>`
     <div class="bar-row"><span>${r.c}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${(r.v/max*100).toFixed(1)}%"></div></div>
       <span class="bar-amt">${fmt(r.v)}</span></div>`).join('');
@@ -1097,7 +1102,7 @@ function editItem(id){
   document.getElementById('a-status').value=it.s;
   document.getElementById('a-date').value=it.d;
   document.getElementById('a-pos').value=it.pos||'';
-  syncFormFields();
+  syncFormFields(it.s);
   document.getElementById('a-km').value=it.km||'';
   FORM_ADD=(it.add||[]).map(a=>({...a}));renderAddons();
   document.getElementById('form-title').textContent='✎ 編輯：'+it.n;
@@ -1120,7 +1125,7 @@ function startSwap(){
   document.getElementById('a-status').value='on';
   document.getElementById('a-date').value=today();
   document.getElementById('a-pos').value=old.pos||'';
-  syncFormFields();
+  syncFormFields('on');
   document.getElementById('a-km').value='';
   FORM_ADD=[];renderAddons();
   document.getElementById('form-title').textContent='⇄ 汰換「'+old.n+'」— 填入新零件';
@@ -1334,6 +1339,7 @@ function renderAll(){renderName();renderStats();renderBars();renderFilters();ren
 
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
+document.getElementById('a-cat').value='制動';   // 選單首項是保養耗材，但預設停在零件
 document.getElementById('a-cat').addEventListener('change',syncFormFields);
 syncFormFields();
 document.getElementById('a-date').value=today();
