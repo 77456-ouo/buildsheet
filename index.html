@@ -156,6 +156,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .batch-warn{background:#241F14;border:1px solid #5A4A26;border-radius:8px;padding:9px 11px;font-size:11.5px;color:var(--gold);line-height:1.7;margin-bottom:10px}
 .batch-rows{display:grid;gap:6px}
 .batch-row{display:grid;grid-template-columns:74px 84px 1fr 74px 26px;gap:5px;align-items:center}
+.batch-row.nocat{grid-template-columns:84px 1fr 74px 26px}
 .batch-row select,.batch-row input{width:100%;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:7px;color:var(--ink);font-family:var(--tc);font-size:12.5px;padding:7px 6px}
 .batch-row select:focus,.batch-row input:focus{outline:none;border-color:var(--manx)}
 @media(max-width:480px){
@@ -328,13 +329,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
 
     <div class="addbox" id="batchbox" hidden>
       <h3>批次貼上</h3>
-      <div class="batch-help">
-        分類骨架已經幫你排好，<b>在各分類下面補上項目</b>就好，用不到的分類留空即可。<br>
-        · 項目寫成 <b>品牌 品項名稱 金額</b>，沒有品牌就直接寫品項<br>
-        · 品牌名稱有空格時用<b>底線</b>連起來：<b>Shark_Factory X2 後避震 25300</b><br>
-        · 最上面的<b>日期</b>與<b>里程</b>會套用到這批全部項目<br>
-        · 解析後會先讓你逐項確認，確認無誤才寫入
-      </div>
+      <div class="batch-help" id="batch-help"></div>
       <textarea id="batch-in" rows="9" placeholder="日期 2026/08/22
 里程 40000
 
@@ -344,7 +339,7 @@ Brembo 基本對四保養 1200
 外觀
 曼島綠烤漆含後底板 18500"></textarea>
       <div class="grid" style="margin-top:10px">
-        <div><label>這批項目的狀態</label><select id="batch-status">
+        <div><label>這批項目的狀態</label><select id="batch-status" onchange="onBatchStatus()">
           <option value="on">現役</option><option value="wish">願望清單</option><option value="out">退役</option><option value="srv">保養／耗材</option>
         </select></div>
       </div>
@@ -361,7 +356,7 @@ Brembo 基本對四保養 1200
         <div><label>品牌</label><input id="a-brand" placeholder="可留空"></div>
         <div><label>完工價（NT$）</label><input id="a-price" type="number" inputmode="numeric" placeholder="0 = 未定價"></div>
         <div class="full"><label>品項名稱</label><input id="a-name" placeholder="例：前土除"></div>
-        <div><label>分類</label><select id="a-cat"></select></div>
+        <div id="a-cat-row"><label>分類</label><select id="a-cat"></select></div>
         <div><label>狀態</label><select id="a-status">
           <option value="on">現役</option><option value="wish">願望清單</option><option value="out">退役</option><option value="srv">保養／耗材</option>
         </select></div>
@@ -462,15 +457,19 @@ function posLabel(cat,pz){
   return m&&m[pz]?m[pz]:[POS_NAME[pz],POS_EN[pz]];
 }
 
-// 位置欄位只在需要的時候出現：分類是外觀，或這筆本來就填過位置。
-// 後者是為了讓舊資料改得到，不要變成看不見又清不掉的狀態。
-function syncPosField(){
-  const c=document.getElementById('a-cat').value;
+// 表單只顯示這筆用得到的欄位：
+//   分類 —— 保養不掛分類，收起來，值固定成其他（純內部佔位）
+//   位置 —— 只有外觀用得到；已經填過的舊資料也要看得到才改得掉
+function syncFormFields(){
+  const srv=document.getElementById('a-status').value==='srv';
+  const cat=document.getElementById('a-cat');
   const sel=document.getElementById('a-pos');
-  const m=POS_CATS[c];
+  if(srv){cat.value='其他';sel.value='';}
+  document.getElementById('a-cat-row').hidden=srv;
+  const m=POS_CATS[cat.value];
   sel.options[1].textContent=m?m.F[0]:POS_NAME.F;
   sel.options[2].textContent=m?m.R[0]:POS_NAME.R;
-  document.getElementById('a-pos-row').hidden=!m&&!sel.value;
+  document.getElementById('a-pos-row').hidden=srv||(!m&&!sel.value);
 }
 // 舊分類 → 新大分類的對應表（之後想再調整分類定義，改這裡就好）
 const LEGACY={傳動:'動力',燈電:'外觀',操控:'外觀'};
@@ -804,12 +803,31 @@ let BATCH=[],BATCH_META={d:'',km:0},BATCH_WARN=[];
 
 // 預先把分類骨架填好，使用者只要在各分類下面補項目，
 // 不用記分類名稱怎麼寫，也不會打錯字。用不到的分類留空即可。
-function batchTemplate(){
-  const km=lastKm();
-  return['日期 '+today(),
-         '里程 '+(km||''),
-         '',
-         ...CATS.flatMap(c=>[c,'',''])].join('\n').trimEnd()+'\n';
+function batchTemplate(st){
+  st=st||document.getElementById('batch-status').value;
+  const head=['日期 '+today(),'里程 '+(lastKm()||''),''];
+  // 保養不掛分類，範本就不放骨架，一行一項直接貼整趟工單
+  if(st==='srv')return head.join('\n')+'\n';
+  return[...head,...CATS.flatMap(c=>[c,'',''])].join('\n').trimEnd()+'\n';
+}
+
+// 切換這批的狀態時換掉範本，但只在使用者還沒動過它的時候，免得洗掉打到一半的內容
+function onBatchStatus(){
+  const ta=document.getElementById('batch-in');
+  if(!ta.value.trim()||[batchTemplate('on'),batchTemplate('srv')].includes(ta.value))
+    ta.value=batchTemplate();
+  renderBatchHelp();
+}
+
+function renderBatchHelp(){
+  const srv=document.getElementById('batch-status').value==='srv';
+  document.getElementById('batch-help').innerHTML=(srv
+    ?'保養<b>不用選分類</b>，一行一項，把整趟工單直接貼上來就好。<br>'
+    :'分類骨架已經幫你排好，<b>在各分類下面補上項目</b>就好，用不到的分類留空即可。<br>')+
+    '· 項目寫成 <b>品牌 品項名稱 金額</b>，沒有品牌就直接寫品項<br>'+
+    '· 品牌名稱有空格時用<b>底線</b>連起來：<b>Shark_Factory X2 後避震 25300</b><br>'+
+    '· 最上面的<b>日期</b>與<b>里程</b>會套用到這批全部項目<br>'+
+    '· 解析後會先讓你逐項確認，確認無誤才寫入';
 }
 
 function setAddMode(m){
@@ -819,6 +837,7 @@ function setAddMode(m){
   document.getElementById('tab-batch').classList.toggle('on',m==='batch');
   const ta=document.getElementById('batch-in');
   if(m==='batch'&&!ta.value.trim())ta.value=batchTemplate();
+  if(m==='batch')renderBatchHelp();
 }
 
 function clearBatch(){
@@ -845,7 +864,7 @@ function splitBrandName(text){
 }
 
 // 把貼上的文字解析成項目清單。規則刻意寬鬆，解析完一定要讓使用者過目。
-function parseBatchText(raw){
+function parseBatchText(raw,srv){
   const items=[],warnings=[],meta={d:'',km:0};
   let cat=null;
   raw.split(/\r?\n/).forEach((line,idx)=>{
@@ -879,15 +898,16 @@ function parseBatchText(raw){
 
     const{b,n}=splitBrandName(parts.join(' '));
     if(!n){warnings.push('第 '+no+' 行看不出品項，已略過');return;}
-    if(!cat)warnings.push('第 '+no+' 行前面沒有分類，先歸到「其他」：'+n);
+    if(!cat&&!srv)warnings.push('第 '+no+' 行前面沒有分類，先歸到「其他」：'+n);
 
-    items.push({b,n,p,c:cat||'其他'});
+    items.push({b,n,p,c:srv?'其他':(cat||'其他')});
   });
   return{items,meta,warnings};
 }
 
 function parseBatch(){
-  const r=parseBatchText(document.getElementById('batch-in').value);
+  const r=parseBatchText(document.getElementById('batch-in').value,
+                         document.getElementById('batch-status').value==='srv');
   BATCH=r.items;BATCH_META=r.meta;BATCH_WARN=r.warnings;
   renderBatchPreview();
 }
@@ -899,6 +919,7 @@ function renderBatchPreview(){
       ?`<div class="batch-warn">${BATCH_WARN.map(esc).join('<br>')}</div>`:'';
     return;
   }
+  const srv=document.getElementById('batch-status').value==='srv';   // 保養不顯示分類
   const total=BATCH.reduce((t,i)=>t+i.p,0);
   const meta=[BATCH_META.d?'日期 '+BATCH_META.d:'日期 '+today()+'（預設）',
               BATCH_META.km?'里程 '+BATCH_META.km.toLocaleString('zh-TW')+' km':''].filter(Boolean);
@@ -907,8 +928,8 @@ function renderBatchPreview(){
     ${BATCH_WARN.length?`<div class="batch-warn">${BATCH_WARN.map(esc).join('<br>')}</div>`:''}
     <div class="batch-rows">
       ${BATCH.map((it,x)=>`
-        <div class="batch-row">
-          <select onchange="BATCH[${x}].c=this.value">${CATS.map(c=>`<option${c===it.c?' selected':''}>${c}</option>`).join('')}</select>
+        <div class="batch-row ${srv?'nocat':''}">
+          ${srv?'':`<select onchange="BATCH[${x}].c=this.value">${CATS.map(c=>`<option${c===it.c?' selected':''}>${c}</option>`).join('')}</select>`}
           <input value="${esc(it.b)}" placeholder="品牌" onchange="BATCH[${x}].b=this.value.trim()||'—'">
           <input value="${esc(it.n)}" placeholder="品項名稱" onchange="BATCH[${x}].n=this.value.trim()">
           <input type="number" inputmode="numeric" value="${it.p||''}" placeholder="金額" onchange="BATCH[${x}].p=Math.max(0,parseInt(this.value)||0);renderBatchPreview()">
@@ -980,6 +1001,16 @@ function renderFilters(){
     `<button class="chip ${STATE.cat===c?'on':''}" onclick="STATE.cat='${c}';resetPage();renderFilters();renderList()">${c==='all'?'所有分類':c}</button>`).join('');
 }
 
+// 說明列。保養不掛分類，所以不顯示分類與位置。
+function metaLine(i){
+  const parts=[];
+  if(i.s!=='srv')parts.push(i.c+(i.pos?'·'+posLabel(i.c,i.pos)[0]:''));
+  parts.push(ST_NAME[i.s],i.d);
+  if(i.km)parts.push(i.km.toLocaleString('zh-TW')+' km');
+  if(addSum(i))parts.push('本體 '+fmt(i.p)+' + 附加 '+fmt(addSum(i)));
+  return parts.join(' · ');
+}
+
 function renderList(){
   const rowsEl=document.getElementById('rows');
   const noteEl=document.getElementById('count-note');
@@ -997,7 +1028,8 @@ function renderList(){
   const q=STATE.q.trim().toLowerCase();
   const list=ITEMS.filter(i=>
     (STATE.status==='all'||i.s===STATE.status)&&
-    (STATE.cat==='all'||i.c===STATE.cat)&&
+    // 保養不屬於任何分類，所以任一分類篩選都不該撈到它
+    (STATE.cat==='all'||(i.s!=='srv'&&i.c===STATE.cat))&&
     (!q||(i.b+i.n).toLowerCase().includes(q)))
     // 最近修改的排前面；舊資料沒有 mt，用 id 遞補（id 越大越新）
     .sort((a,b)=>(b.mt||0)-(a.mt||0)||b.id-a.id);
@@ -1008,7 +1040,7 @@ function renderList(){
     <div class="row ${i.s} ${i.id===EDIT_ID?'editing':''}" onclick="editItem(${i.id})">
       <span class="dot ${i.s}"></span>
       <div><div class="name"><b>${esc(i.b)}</b>${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</div>
-        <div class="meta">${i.c}${i.pos?'·'+posLabel(i.c,i.pos)[0]:''} · ${ST_NAME[i.s]} · ${i.d}${i.km?` · ${i.km.toLocaleString('zh-TW')} km`:''}${addSum(i)?` · 本體 ${fmt(i.p)} + 附加 ${fmt(addSum(i))}`:''}</div></div>
+        <div class="meta">${metaLine(i)}</div></div>
       <div class="price ${itemTotal(i)?'':'tbd'}">${itemTotal(i)?fmt(itemTotal(i)):'未定價'}</div>
     </div>`).join(''):'<div class="row"><span></span><div class="name" style="color:var(--sub)">沒有符合的項目 — 換個條件試試</div><div></div></div>';
   renderPager(pages,list.length);
@@ -1074,7 +1106,7 @@ function editItem(id){
   document.getElementById('a-status').value=it.s;
   document.getElementById('a-date').value=it.d;
   document.getElementById('a-pos').value=it.pos||'';
-  syncPosField();
+  syncFormFields();
   document.getElementById('a-km').value=it.km||'';
   FORM_ADD=(it.add||[]).map(a=>({...a}));renderAddons();
   document.getElementById('form-title').textContent='✎ 編輯：'+it.n;
@@ -1097,7 +1129,7 @@ function startSwap(){
   document.getElementById('a-status').value='on';
   document.getElementById('a-date').value=today();
   document.getElementById('a-pos').value=old.pos||'';
-  syncPosField();
+  syncFormFields();
   document.getElementById('a-km').value='';
   FORM_ADD=[];renderAddons();
   document.getElementById('form-title').textContent='⇄ 汰換「'+old.n+'」— 填入新零件';
@@ -1121,7 +1153,7 @@ function resetForm(){
   ['a-brand','a-name','a-price','a-km','a-add-t','a-add-p'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('a-date').value=today();
   document.getElementById('a-pos').value='';
-  syncPosField();
+  syncFormFields();
   document.getElementById('form-title').textContent='＋ 新增項目';
   document.getElementById('btn-save').textContent='加入清單';
   document.getElementById('btn-cancel').hidden=true;
@@ -1310,8 +1342,9 @@ function renderAll(){renderName();renderStats();renderBars();renderFilters();ren
 
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
-document.getElementById('a-cat').addEventListener('change',syncPosField);
-syncPosField();
+document.getElementById('a-cat').addEventListener('change',syncFormFields);
+document.getElementById('a-status').addEventListener('change',syncFormFields);
+syncFormFields();
 document.getElementById('a-date').value=today();
 loadSaved();
 renderAll();
