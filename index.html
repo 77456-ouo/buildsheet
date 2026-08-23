@@ -58,6 +58,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 
 /* ── stats ── */
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
+.stat.total{grid-column:1/-1}   /* 總投入是標題數字,獨佔一排 */
 @media(min-width:640px){.stats{grid-template-columns:repeat(4,1fr)}}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px}
 .stat .k{font-size:12px;color:var(--sub);letter-spacing:.08em}
@@ -65,6 +66,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .stat.total .v{color:var(--manx)}
 .stat.wish .v{color:var(--gold)}
 .stat.out .v{color:var(--gray)}
+.stat.srv .v{color:var(--sub)}
 
 /* ── bars ── */
 .bars{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px}
@@ -223,7 +225,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .sec.gray .cat-row .n,.sec.gray .cat-row .p{color:var(--gray)}
 
 /* ── showcase edit tools ── */
-.show-tools{display:flex;justify-content:flex-end;margin:16px 0 -8px}
+.show-tools{display:flex;gap:8px;justify-content:flex-end;margin:16px 0 -8px}
 .show-tools .chip.on{border-color:var(--manx);color:var(--ink);background:var(--manx-deep)}
 .edit-hint{font-size:11.5px;color:var(--sub);text-align:right;margin:6px 0 0}
 .tools{display:inline-flex;gap:4px;margin-left:8px;flex-shrink:0}
@@ -251,6 +253,28 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .cover-btns button{appearance:none;background:var(--panel);border:1px solid var(--line);color:var(--sub);border-radius:8px;font-size:12.5px;font-family:var(--tc);padding:7px 14px;cursor:pointer}
 #lightbox{position:fixed;inset:0;background:rgba(8,13,10,.93);display:none;align-items:center;justify-content:center;z-index:60;padding:18px;cursor:zoom-out}
 #lightbox.on{display:flex}
+/* ── 挑選展示項目 ── */
+#picker{position:fixed;inset:0;background:rgba(8,13,10,.93);z-index:70;display:flex;align-items:flex-end;justify-content:center}
+.pk-box{background:var(--panel);border:1px solid var(--line);border-radius:14px 14px 0 0;width:100%;max-width:520px;max-height:86vh;display:flex;flex-direction:column}
+.pk-head{display:flex;align-items:baseline;justify-content:space-between;padding:16px 16px 10px;border-bottom:1px solid var(--line)}
+.pk-head h3{font-size:15px;font-weight:900;letter-spacing:.06em}
+.pk-head .n{font-family:var(--num);font-size:13px;color:var(--manx)}
+.pk-body{overflow-y:auto;padding:0 16px 8px;flex:1}
+.pk-cat{margin-top:12px}
+.pk-cat-head{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
+.pk-cat-head .t{font-size:13px;font-weight:700;letter-spacing:.08em}
+.pk-cat-head button{appearance:none;background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:6px;font-family:var(--tc);font-size:11.5px;padding:3px 9px;cursor:pointer;margin-left:6px}
+.pk-cat-head button:hover{color:var(--ink);border-color:var(--sub)}
+.pk-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.pk-row:last-child{border-bottom:none}
+.pk-row input{width:17px;height:17px;accent-color:var(--manx);flex-shrink:0}
+.pk-row .b{font-family:var(--num);font-weight:600;font-size:11.5px;color:var(--manx);text-transform:uppercase;min-width:94px}
+.pk-row .n{font-size:13.5px;flex:1}
+.pk-empty{padding:28px 0;color:var(--sub);font-size:13px;text-align:center}
+.pk-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+.pk-foot button{appearance:none;border:none;font-family:var(--tc);font-weight:700;font-size:14px;padding:11px 18px;border-radius:9px;cursor:pointer}
+.pk-foot .main{background:var(--manx);color:#08130D;flex:1}
+.pk-foot .ghost{background:transparent;border:1px solid var(--line);color:var(--sub)}
 #lightbox img{max-width:100%;max-height:100%;border-radius:12px;border:1px solid var(--line)}
 
 .tune{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:26px}
@@ -321,7 +345,7 @@ Brembo 基本對四保養 1200
 曼島綠烤漆含後底板 18500"></textarea>
       <div class="grid" style="margin-top:10px">
         <div><label>這批項目的狀態</label><select id="batch-status">
-          <option value="on">現役</option><option value="wish">願望清單</option><option value="out">退役</option>
+          <option value="on">現役</option><option value="wish">願望清單</option><option value="out">退役</option><option value="srv">保養／耗材</option>
         </select></div>
       </div>
       <div class="btns">
@@ -339,7 +363,7 @@ Brembo 基本對四保養 1200
         <div class="full"><label>品項名稱</label><input id="a-name" placeholder="例：前土除"></div>
         <div><label>分類</label><select id="a-cat"></select></div>
         <div><label>狀態</label><select id="a-status">
-          <option value="on">現役</option><option value="wish">願望清單</option><option value="out">退役</option>
+          <option value="on">現役</option><option value="wish">願望清單</option><option value="out">退役</option><option value="srv">保養／耗材</option>
         </select></div>
         <div><label>日期</label><input id="a-date" type="date"></div>
         <div><label>里程（km）</label><input id="a-km" type="number" inputmode="numeric" placeholder="選填"></div>
@@ -389,6 +413,7 @@ Brembo 基本對四保養 1200
   <!-- ═══════════ 展示模式 ═══════════ -->
   <div id="view-show" class="view">
     <div class="show-tools">
+      <button class="chip" onclick="openPicker()">☑ 挑選展示</button>
       <button class="chip" id="btn-layout" onclick="toggleShowEdit()">✎ 編輯版面</button>
     </div>
     <div class="edit-hint" id="edit-hint" hidden>▲▼ 調整順序 · 👁 決定要不要展示 · 隱藏只影響這一頁，紀錄模式的資料都還在</div>
@@ -402,6 +427,16 @@ Brembo 基本對四保養 1200
 </div>
 
 <div id="lightbox" onclick="this.classList.remove('on')"><img id="lightbox-img" alt=""></div>
+<div id="picker" hidden onclick="if(event.target===this)closePicker()">
+  <div class="pk-box">
+    <div class="pk-head"><h3>挑選展示項目</h3><span class="n" id="pk-count"></span></div>
+    <div class="pk-body" id="pk-body"></div>
+    <div class="pk-foot">
+      <button class="ghost" onclick="closePicker()">取消</button>
+      <button class="main" onclick="applyPicker()">套用</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 <div hidden>
   <input type="file" id="a-cover" accept="image/*" onchange="pickCover(this)">
@@ -412,7 +447,9 @@ Brembo 基本對四保養 1200
 <script>
 const CATS=['制動','懸吊','動力','外觀','其他'];
 const CAT_EN={制動:'Brake',懸吊:'Suspension',動力:'Powertrain',外觀:'Body & Parts',其他:'Misc'};
-const ST_NAME={on:'現役',out:'退役',wish:'願望清單'};
+// srv＝保養／耗材：機油、來令片、工資這類會反覆發生的支出。
+// 它不是「裝在車上的零件」，所以不進展示頁，統計也與零件投入分開算。
+const ST_NAME={on:'現役',out:'退役',wish:'願望清單',srv:'保養'};
 const POS_NAME={F:'前段',R:'後段'};       // 通用說法，給沒有專屬說法的分類用
 const POS_EN={F:'Front',R:'Rear'};
 // 目前只有外觀需要分段：車殼講的是前後半段。其他分類用不到，表單就不顯示位置欄位。
@@ -452,7 +489,7 @@ const DAY=86400000;
 
 let SWAP_ID=null,EDIT_ID=null,FORM_ADD=[],SHOW_EDIT=false,PHOTO_TARGET=null;
 const STATE={status:'all',cat:'all',q:''};
-const PAGE_SIZE=5;          // 紀錄模式清單每頁筆數
+const PAGE_SIZE=10;         // 紀錄模式清單每頁筆數
 let PAGE=1;
 const stamp=()=>Date.now();  // mt：最後修改時間，用於「最近修改」排序
 // 篩選或搜尋改變時回到第一頁
@@ -515,7 +552,7 @@ function applyData(d){
   ITEMS.forEach(i=>{
     i.c=LEGACY[i.c]||i.c;
     if(!CATS.includes(i.c))i.c='其他';
-    if(!['on','out','wish'].includes(i.s))i.s='on';
+    if(!['on','out','wish','srv'].includes(i.s))i.s='on';
     i.d=i.d||today();
     i.p=Math.max(0,parseInt(i.p)||0);
     if(i.mt!=null)i.mt=Number(i.mt)||0;   // 最後修改時間，舊備份沒有此欄位
@@ -902,8 +939,10 @@ function commitBatch(){
 
 /* ══════════ 紀錄模式 ══════════ */
 function stats(){
-  const on=ITEMS.filter(i=>i.s==='on'),out=ITEMS.filter(i=>i.s==='out'),wish=ITEMS.filter(i=>i.s==='wish');
-  return{on,out,wish,spent:sum(on)+sum(out)};
+  const on=ITEMS.filter(i=>i.s==='on'),out=ITEMS.filter(i=>i.s==='out'),
+        wish=ITEMS.filter(i=>i.s==='wish'),srv=ITEMS.filter(i=>i.s==='srv');
+  // spent 只算零件：歷史總投入 = 現役投入 + 退役投入,保養不墊高這個數字
+  return{on,out,wish,srv,spent:sum(on)+sum(out)};
 }
 
 function renderStats(){
@@ -914,12 +953,15 @@ function renderStats(){
     <div class="stat total"><div class="k">歷史總投入</div><div class="v">${fmt(s.spent)}</div></div>
     <div class="stat"><div class="k">現役投入</div><div class="v">${fmt(sum(s.on))}</div></div>
     <div class="stat out"><div class="k">退役投入</div><div class="v">${fmt(sum(s.out))}</div></div>
-    <div class="stat wish"><div class="k">願望清單待購</div><div class="v">${fmt(sum(s.wish))}</div></div>`;
+    <div class="stat wish"><div class="k">願望清單待購</div><div class="v">${fmt(sum(s.wish))}</div></div>
+    <div class="stat srv"><div class="k">保養支出</div><div class="v">${fmt(sum(s.srv))}</div></div>`;
 }
 
 function renderBars(){
   const el=document.getElementById('bars');
-  const rows=CATS.map(c=>({c,v:sum(ITEMS.filter(i=>i.c===c&&i.s!=='wish'))})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
+  // 與歷史總投入同口徑：不含願望清單，也不含保養
+  const rows=CATS.map(c=>({c,v:sum(ITEMS.filter(i=>i.c===c&&i.s!=='wish'&&i.s!=='srv'))}))
+    .filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
   if(!rows.length){el.hidden=true;el.innerHTML='';return;}
   el.hidden=false;
   const max=rows[0].v;
@@ -930,7 +972,8 @@ function renderBars(){
 }
 
 function renderFilters(){
-  const st=[['all','全部',''],['on','現役',''],['out','退役','gray'],['wish','願望清單','gold']];
+  const st=[['all','全部',''],['on','現役',''],['out','退役','gray'],
+          ['wish','願望清單','gold'],['srv','保養','']];
   document.getElementById('f-status').innerHTML=st.map(([k,label,cls])=>
     `<button class="chip ${cls} ${STATE.status===k?'on':''}" onclick="STATE.status='${k}';resetPage();renderFilters();renderList()">${label}</button>`).join('');
   document.getElementById('f-cat').innerHTML=['all',...CATS].map(c=>
@@ -1185,6 +1228,60 @@ function catRow(i){
 }
 
 function toggleShowEdit(){SHOW_EDIT=!SHOW_EDIT;renderShow();}
+
+/* ── 挑選展示項目：一次勾完，取代一顆一顆點 👁 ── */
+let PICK=null;   // {項目id:要不要展示}，按下套用才寫回 ITEMS
+
+// 展示頁只會出現現役與願望清單，保養和退役本來就不在，不列進來
+function pickable(){return ITEMS.filter(i=>i.s==='on'||i.s==='wish');}
+
+function openPicker(){
+  PICK={};
+  pickable().forEach(i=>PICK[i.id]=i.v!==false);
+  document.getElementById('picker').hidden=false;
+  renderPicker();
+}
+function closePicker(){document.getElementById('picker').hidden=true;PICK=null;}
+
+function renderPicker(){
+  const list=pickable();
+  const groups=LAYOUT.catOrder.map(c=>[c,list.filter(i=>i.s==='on'&&i.c===c)])
+    .concat([['下一步',list.filter(i=>i.s==='wish')]]);
+  document.getElementById('pk-body').innerHTML=groups.map(([title,g])=>{
+    if(!g.length)return'';
+    const ids=g.map(i=>i.id).join(',');
+    return`<div class="pk-cat">
+      <div class="pk-cat-head"><span class="t">${esc(title)}</span><span>
+        <button onclick="pickAll([${ids}],true)">全選</button>
+        <button onclick="pickAll([${ids}],false)">全不選</button></span></div>
+      ${g.map(i=>`<label class="pk-row">
+        <input type="checkbox" ${PICK[i.id]?'checked':''} onchange="PICK[${i.id}]=this.checked;pickCount()">
+        <span class="b">${esc(i.b)}</span><span class="n">${esc(i.n)}</span></label>`).join('')}
+    </div>`;
+  }).join('')||'<div class="pk-empty">還沒有可以展示的項目。</div>';
+  pickCount();
+}
+
+function pickCount(){
+  const list=pickable();
+  document.getElementById('pk-count').textContent=
+    list.filter(i=>PICK[i.id]).length+' / '+list.length;
+}
+
+// 只重畫清單，不動已捲動的位置以外的狀態
+function pickAll(ids,on){ids.forEach(id=>PICK[id]=on);renderPicker();}
+
+function applyPicker(){
+  let changed=0;
+  pickable().forEach(i=>{
+    const want=!!PICK[i.id];
+    if((i.v!==false)!==want)changed++;
+    i.v=want;
+  });
+  closePicker();
+  renderShow();   // renderShow 內含 save
+  toast(changed?'已更新 '+changed+' 個項目':'展示項目沒有變動');
+}
 function toggleItem(id){const it=ITEMS.find(i=>i.id===id);if(it){it.v=it.v===false;renderShow();}}
 function moveCat(c,dir){
   const o=LAYOUT.catOrder,a=o.indexOf(c),b=a+dir;
