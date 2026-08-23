@@ -72,7 +72,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .bars{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px}
 .bars h3{font-size:13px;color:var(--sub);font-weight:500;letter-spacing:.1em;margin-bottom:12px}
 #bars h3 .bar-note{font-weight:500;font-size:11px;color:var(--sub);letter-spacing:0;margin-left:8px}
-.bar-row{display:grid;grid-template-columns:52px 1fr 84px;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
+.bar-row{display:grid;grid-template-columns:58px 1fr 84px;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
 .bar-track{height:8px;background:#0C110E;border-radius:4px;overflow:hidden}
 .bar-fill{height:100%;background:linear-gradient(90deg,var(--manx-deep),var(--manx));border-radius:4px}
 .bar-amt{font-family:var(--num);font-weight:600;text-align:right;color:var(--sub);font-size:12px}
@@ -330,7 +330,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
     <div class="addbox" id="batchbox" hidden>
       <h3>批次貼上</h3>
       <div class="batch-help">
-        分類骨架已經幫你排好，<b>在各分類下面補上項目</b>就好，用不到的分類留空即可。<b>保養</b>也是其中一個分類，換零件順便保養可以寫在同一份裡。<br>
+        分類骨架已經幫你排好，<b>在各分類下面補上項目</b>就好，用不到的分類留空即可。<b>保養耗材</b>也是其中一個分類，換零件順便保養可以寫在同一份裡。<br>
         · 項目寫成 <b>品牌 品項名稱 金額</b>，沒有品牌就直接寫品項<br>
         · 品牌名稱有空格時用<b>底線</b>連起來：<b>Shark_Factory X2 後避震 25300</b><br>
         · 最上面的<b>日期</b>與<b>里程</b>會套用到這批全部項目<br>
@@ -346,7 +346,7 @@ Brembo 基本對四保養 1200
 曼島綠烤漆含後底板 18500"></textarea>
       <div class="grid" style="margin-top:10px">
         <div><label>這批項目的狀態</label><select id="batch-status">
-          <option value="on">現役</option><option value="wish">願望清單</option><option value="out">退役</option>
+          <option value="on">現役</option><option value="out">退役</option><option value="wish">願望清單</option>
         </select></div>
       </div>
       <div class="btns">
@@ -364,7 +364,7 @@ Brembo 基本對四保養 1200
         <div class="full"><label>品項名稱</label><input id="a-name" placeholder="例：前土除"></div>
         <div id="a-cat-row"><label>分類</label><select id="a-cat"></select></div>
         <div><label>狀態</label><select id="a-status">
-          <option value="on">現役</option><option value="wish">願望清單</option><option value="out">退役</option>
+          <option value="on">現役</option><option value="out">退役</option><option value="wish">願望清單</option>
         </select></div>
         <div><label>日期</label><input id="a-date" type="date"></div>
         <div><label>里程（km）</label><input id="a-km" type="number" inputmode="numeric" placeholder="選填"></div>
@@ -446,14 +446,14 @@ Brembo 基本對四保養 1200
 </div>
 
 <script>
-const CATS=['制動','懸吊','動力','外觀','其他','保養'];
-const CAT_EN={制動:'Brake',懸吊:'Suspension',動力:'Powertrain',外觀:'Body & Parts',其他:'Misc',保養:'Service'};
+const CATS=['制動','懸吊','動力','外觀','其他','保養耗材'];
+const CAT_EN={制動:'Brake',懸吊:'Suspension',動力:'Powertrain',外觀:'Body & Parts',其他:'Misc',保養耗材:'Service'};
 // 保養不進展示頁，所以不參與展示分節與整區排序
-const SHOW_CATS=CATS.filter(c=>c!=='保養');
+const SHOW_CATS=CATS.filter(c=>c!=='保養耗材');
 const ST_NAME={on:'現役',out:'退役',wish:'願望清單'};
-// 保養這個分類的狀態要換句話說：做過的叫已完成，還沒做的叫預定
+// 保養耗材的狀態要換句話說：做過的叫已完成，還沒做的叫預定
 const SRV_ST={on:'已完成',wish:'預定'};
-function stName(i){return i.c==='保養'&&SRV_ST[i.s]||ST_NAME[i.s];}
+function stName(i){return i.c==='保養耗材'&&SRV_ST[i.s]||ST_NAME[i.s];}
 const POS_NAME={F:'前段',R:'後段'};       // 通用說法，給沒有專屬說法的分類用
 const POS_EN={F:'Front',R:'Rear'};
 // 目前只有外觀需要分段：車殼講的是前後半段。其他分類用不到，表單就不顯示位置欄位。
@@ -473,16 +473,18 @@ function syncFormFields(){
   const cat=document.getElementById('a-cat');
   const st=document.getElementById('a-status');
   const sel=document.getElementById('a-pos');
-  const srv=cat.value==='保養';
-  st.options[0].textContent=srv?'已完成':'現役';
-  st.options[1].textContent=srv?'預定要做':'願望清單';
+  const srv=cat.value==='保養耗材';
+  // 用 value 定位，不靠選項順序 —— 順序一改，位置索引就會貼錯格
+  const opt=v=>[...st.options].find(o=>o.value===v);
+  opt('on').textContent=srv?'已完成':'現役';
+  opt('wish').textContent=srv?'預定要做':'願望清單';
   const m=POS_CATS[cat.value];
   sel.options[1].textContent=m?m.F[0]:POS_NAME.F;
   sel.options[2].textContent=m?m.R[0]:POS_NAME.R;
   document.getElementById('a-pos-row').hidden=!m&&!sel.value;
 }
 // 舊分類 → 新大分類的對應表（之後想再調整分類定義，改這裡就好）
-const LEGACY={傳動:'動力',燈電:'外觀',操控:'外觀'};
+const LEGACY={傳動:'動力',燈電:'外觀',操控:'外觀',保養:'保養耗材'};
 const STORE_KEY='buildsheet.v1';
 const SCHEMA=1;
 
@@ -560,7 +562,7 @@ function applyData(d){
   // 正規化：舊分類轉新分類、補日期、金額轉數字
   ITEMS.forEach(i=>{
     // 舊版把保養記成第四種狀態，現在改成分類；舊備份還原時自動搬過去
-    if(i.s==='srv'){i.c='保養';i.s='on';}
+    if(i.s==='srv'){i.c='保養耗材';i.s='on';}
     i.c=LEGACY[i.c]||i.c;
     if(!CATS.includes(i.c))i.c='其他';
     if(!['on','out','wish'].includes(i.s))i.s='on';
@@ -947,26 +949,26 @@ function commitBatch(){
 
 /* ══════════ 紀錄模式 ══════════ */
 function stats(){
-  const part=i=>i.c!=='保養';
+  const part=i=>i.c!=='保養耗材';
   const on=ITEMS.filter(i=>i.s==='on'&&part(i)),
         out=ITEMS.filter(i=>i.s==='out'&&part(i)),
         wish=ITEMS.filter(i=>i.s==='wish'&&part(i)),
         // 保養支出只算已經花掉的，預定要做的不算
-        srv=ITEMS.filter(i=>i.c==='保養'&&i.s!=='wish');
+        srv=ITEMS.filter(i=>i.c==='保養耗材'&&i.s!=='wish');
   // spent 只算零件：歷史總投入 = 現役投入 + 退役投入，保養不墊高這個數字
   return{on,out,wish,srv,spent:sum(on)+sum(out)};
 }
 
 function renderStats(){
   // 退役只算當初的購入金額，不扣回收價；這樣三個數字才對得起來：
-  // 歷史總投入 = 現役投入 + 退役投入
+  // 歷史總投入 = 現役零件 + 退役零件
   const s=stats();
   document.getElementById('stats').innerHTML=`
     <div class="stat total"><div class="k">歷史總投入</div><div class="v">${fmt(s.spent)}</div></div>
-    <div class="stat"><div class="k">現役投入</div><div class="v">${fmt(sum(s.on))}</div></div>
-    <div class="stat out"><div class="k">退役投入</div><div class="v">${fmt(sum(s.out))}</div></div>
-    <div class="stat wish"><div class="k">願望清單待購</div><div class="v">${fmt(sum(s.wish))}</div></div>
-    <div class="stat srv"><div class="k">保養支出</div><div class="v">${fmt(sum(s.srv))}</div></div>`;
+    <div class="stat"><div class="k">現役零件</div><div class="v">${fmt(sum(s.on))}</div></div>
+    <div class="stat out"><div class="k">退役零件</div><div class="v">${fmt(sum(s.out))}</div></div>
+    <div class="stat wish"><div class="k">願望清單</div><div class="v">${fmt(sum(s.wish))}</div></div>
+    <div class="stat srv"><div class="k">保養耗材</div><div class="v">${fmt(sum(s.srv))}</div></div>`;
 }
 
 function renderBars(){
@@ -977,7 +979,7 @@ function renderBars(){
   el.hidden=false;
   const max=rows[0].v;
   // 保養也是一格，但它不算進歷史總投入，圖的總和會大於那個數字，要講明
-  const note=rows.some(r=>r.c==='保養')?'<span class="bar-note">保養不計入歷史總投入</span>':'';
+  const note=rows.some(r=>r.c==='保養耗材')?'<span class="bar-note">保養耗材不計入歷史總投入</span>':'';
   el.innerHTML='<h3>各項投入（含退役）'+note+'</h3>'+rows.map(r=>`
     <div class="bar-row"><span>${r.c}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${(r.v/max*100).toFixed(1)}%"></div></div>
@@ -1211,8 +1213,8 @@ function tuneCard(){
 }
 
 function groupSec(status,title,en,cls,visible){
-  // 預定要做的保養屬於帳本，不該出現在對外的「下一步」
-  const all=ITEMS.filter(i=>i.s===status&&i.c!=='保養');
+  // 預定要做的保養耗材屬於帳本，不該出現在對外的「下一步」
+  const all=ITEMS.filter(i=>i.s===status&&i.c!=='保養耗材');
   if(!all.length)return'';
   const vis=all.filter(i=>i.v!==false);
   if(!SHOW_EDIT&&(!visible||!vis.length))return'';
@@ -1255,7 +1257,7 @@ function toggleShowEdit(){SHOW_EDIT=!SHOW_EDIT;renderShow();}
 let PICK=null;   // {項目id:要不要展示}，按下套用才寫回 ITEMS
 
 // 展示頁只會出現現役與願望清單的零件；保養和退役本來就不在，不列進來
-function pickable(){return ITEMS.filter(i=>(i.s==='on'||i.s==='wish')&&i.c!=='保養');}
+function pickable(){return ITEMS.filter(i=>(i.s==='on'||i.s==='wish')&&i.c!=='保養耗材');}
 
 function openPicker(){
   PICK={};
