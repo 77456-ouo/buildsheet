@@ -42,6 +42,9 @@ h1 small{display:block;font-family:var(--num);font-weight:600;font-size:12px;let
 
 /* ── 車名就地編輯 ── */
 h1.unset #veh-name{color:var(--sub);font-weight:700}
+/* 拉丁字母在 Noto Sans TC 有 2px 左側留白，中文幾乎沒有，
+   補償後大標題才會與上下兩行的文字切齊 */
+h1.latin{margin-left:-2px}
 .editable{cursor:text;border-bottom:1px dashed transparent;transition:border-color .15s}
 .editable:hover{border-bottom-color:var(--sub)}
 .pen{font-size:12px;color:#4a564d;margin-left:9px;cursor:pointer;vertical-align:9px;transition:color .15s;user-select:none}
@@ -52,11 +55,6 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 #veh-name-in{font-size:34px;font-weight:900;width:min(9em,100%)}
 @media(max-width:420px){#veh-name-in{font-size:27px}}
 #veh-sub-in{font-family:var(--num);font-size:12px;font-weight:600;letter-spacing:.28em;width:min(18em,100%);padding:2px 8px}
-.veh-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--ink)}
-.veh-meta .sep{color:#3d4a41}
-.veh-meta .ghost{color:#5c675e}
-.meta-in{font-family:var(--tc);font-size:13px;font-weight:500;letter-spacing:0;width:min(12em,60vw);padding:3px 8px}
-#veh-km{font-family:var(--num);font-weight:600;letter-spacing:.03em}
 
 /* ── stats ── */
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
@@ -201,7 +199,6 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .plate h2{font-weight:900;font-size:40px;letter-spacing:.08em;line-height:1.05}
 @media(max-width:420px){.plate h2{font-size:31px}}
 .plate .en{font-family:var(--num);font-size:12px;letter-spacing:.3em;color:var(--sub);margin-top:6px;text-transform:uppercase}
-.plate .model{font-size:13px;color:var(--ink);margin-top:10px;letter-spacing:.04em}
 .plate.bare{padding:26px 22px 24px}   /* 沒有封面照時,避免大片留白 */
 
 .sec{margin-bottom:26px}
@@ -284,13 +281,6 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
       <span class="pen" onclick="editInline('name')" title="修改車名">✎</span>
       <small><span id="veh-sub" class="editable" onclick="editInline('sub')" title="點一下修改標語">BUILD SHEET</span><input id="veh-sub-in" class="inline-in" maxlength="48" placeholder="英文標語" hidden><span class="pen" onclick="editInline('sub')" title="修改標語">✎</span></small>
     </h1>
-    <div class="veh-meta">
-      <span id="veh-model" class="editable" onclick="editInline('model')" title="點一下修改車種">＋ 車種</span>
-      <input id="veh-model-in" class="inline-in meta-in" maxlength="24" placeholder="例：Force 2.0" hidden>
-      <span class="sep">·</span>
-      <span id="veh-km" class="editable" onclick="editInline('km')" title="點一下修改目前里程">＋ 里程</span>
-      <input id="veh-km-in" class="inline-in meta-in" type="number" inputmode="numeric" placeholder="目前里程" hidden>
-    </div>
     <div class="mode" role="tablist">
       <button id="tab-rec" class="on" onclick="setMode('rec')">紀錄模式</button>
       <button id="tab-show" onclick="setMode('show')">展示模式</button>
@@ -314,11 +304,11 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-s
     <div class="addbox" id="batchbox" hidden>
       <h3>批次貼上</h3>
       <div class="batch-help">
-        把施工清單整段貼進來，一次加入多筆。<br>
-        · 單獨一行寫<b>分類</b>（制動／懸吊／動力／外觀／其他）可切換後面項目的分類<br>
+        分類骨架已經幫你排好，<b>在各分類下面補上項目</b>就好，用不到的分類留空即可。<br>
         · 項目寫成 <b>品牌 品項名稱 金額</b>，沒有品牌就直接寫品項<br>
-        · 開頭可加 <b>日期</b> 與 <b>里程</b>，省略就用今天<br>
-        · 品牌名稱有空格時用<b>底線</b>連起來：<b>Shark_Factory X2 後避震 25300</b>
+        · 品牌名稱有空格時用<b>底線</b>連起來：<b>Shark_Factory X2 後避震 25300</b><br>
+        · 最上面的<b>日期</b>與<b>里程</b>會套用到這批全部項目<br>
+        · 解析後會先讓你逐項確認，確認無誤才寫入
       </div>
       <textarea id="batch-in" rows="9" placeholder="日期 2026/08/22
 里程 40000
@@ -429,7 +419,7 @@ const STORE_KEY='buildsheet.v1';
 const SCHEMA=1;
 
 /* ── 資料（空白起步，由 localStorage 或匯入檔載入） ── */
-let VEHICLE={name:'',sub:'',model:'',km:0};
+let VEHICLE={name:'',sub:''};
 let ITEMS=[];
 let TUNE=[];
 let LAYOUT={catOrder:[...CATS],wish:true,tune:true,cover:null};
@@ -492,7 +482,7 @@ function applyData(d){
   if(!d||typeof d!=='object')throw new Error('不是有效的備份內容');
   if(!Array.isArray(d.items))throw new Error('找不到零件清單（items）');
   const V=d.vehicle||{};
-  VEHICLE={name:V.name||'',sub:V.sub||'',model:V.model||'',km:Math.max(0,parseInt(V.km)||0)};
+  VEHICLE={name:V.name||'',sub:V.sub||''};
   ITEMS=d.items.map(i=>({...i}));
   TUNE=Array.isArray(d.tune)?d.tune.map(t=>({k:t.k||'',v:t.v||''})):[];
   const L=d.layout||{};
@@ -627,7 +617,7 @@ function importData(inp){
 function clearAll(){
   if(!confirm('確定要清空全部資料嗎？\n\n所有零件、照片、車名與版面設定都會刪除，無法復原。\n建議先按「備份資料」。'))return;
   if(!confirm('再確認一次 — 真的要全部清空？'))return;
-  VEHICLE={name:'',sub:'',model:'',km:0};ITEMS=[];TUNE=[];NEXT_ID=0;
+  VEHICLE={name:'',sub:''};ITEMS=[];TUNE=[];NEXT_ID=0;
   LAYOUT={catOrder:[...CATS],wish:true,tune:true,cover:null};
   SHOW_EDIT=false;STATE.status='all';STATE.cat='all';STATE.q='';
   document.getElementById('q').value='';
@@ -649,26 +639,31 @@ const VEH_FIELDS={
   name :{span:'veh-name', input:'veh-name-in', label:'車名',
          get:()=>VEHICLE.name, set:v=>VEHICLE.name=v},
   sub  :{span:'veh-sub',  input:'veh-sub-in',  label:'標語',
-         get:()=>VEHICLE.sub,  set:v=>VEHICLE.sub=v},
-  model:{span:'veh-model',input:'veh-model-in',label:'車種',
-         get:()=>VEHICLE.model,set:v=>VEHICLE.model=v},
-  km   :{span:'veh-km',   input:'veh-km-in',   label:'里程',
-         get:()=>VEHICLE.km||'', set:v=>VEHICLE.km=Math.max(0,parseInt(v)||0)}
+         get:()=>VEHICLE.sub,  set:v=>VEHICLE.sub=v}
 };
+
+// 最近一次記錄到的里程。沒有車輛層級的里程欄位，改由項目推算，
+// 這樣就不會有一個看不見又改不到的隱藏狀態。
+function lastKm(){
+  let best=0,bestMt=-1;
+  ITEMS.forEach(i=>{
+    if(!i.km)return;
+    const mt=i.mt||0;
+    if(mt>bestMt||(mt===bestMt&&i.km>best)){bestMt=mt;best=i.km;}
+  });
+  return best;
+}
 
 function renderName(){
   const nm=VEHICLE.name||'我的愛車';
   document.getElementById('veh-name').textContent=nm;
-  document.getElementById('veh-h1').classList.toggle('unset',!VEHICLE.name);
+  const h1=document.getElementById('veh-h1');
+  h1.classList.toggle('unset',!VEHICLE.name);
+  h1.classList.toggle('latin',/^[A-Za-z0-9]/.test(nm));
   document.getElementById('veh-sub').textContent=VEHICLE.sub||'BUILD SHEET';
-  const md=document.getElementById('veh-model');
-  md.textContent=VEHICLE.model||'＋ 車種';
-  md.classList.toggle('ghost',!VEHICLE.model);
-  const km=document.getElementById('veh-km');
-  km.textContent=VEHICLE.km?VEHICLE.km.toLocaleString('zh-TW')+' km':'＋ 里程';
-  km.classList.toggle('ghost',!VEHICLE.km);
   // 新增項目的里程欄位順便提示目前里程，省得使用者回頭查
-  document.getElementById('a-km').placeholder=VEHICLE.km?'選填，目前 '+VEHICLE.km.toLocaleString('zh-TW'):'選填';
+  const last=lastKm();
+  document.getElementById('a-km').placeholder=last?'選填，上次記錄 '+last.toLocaleString('zh-TW'):'選填';
   document.getElementById('foot').textContent=VEHICLE.sub||'BUILD SHEET · MOD LEDGER';
   document.title=nm+' BUILD SHEET';
 }
@@ -748,15 +743,27 @@ function addAddon(){
 /* ══════════ 批次貼上 ══════════ */
 let BATCH=[],BATCH_META={d:'',km:0},BATCH_WARN=[];
 
+// 預先把分類骨架填好，使用者只要在各分類下面補項目，
+// 不用記分類名稱怎麼寫，也不會打錯字。用不到的分類留空即可。
+function batchTemplate(){
+  const km=lastKm();
+  return['日期 '+today(),
+         '里程 '+(km||''),
+         '',
+         ...CATS.flatMap(c=>[c,'',''])].join('\n').trimEnd()+'\n';
+}
+
 function setAddMode(m){
   document.getElementById('addbox').hidden=m!=='single';
   document.getElementById('batchbox').hidden=m!=='batch';
   document.getElementById('tab-single').classList.toggle('on',m==='single');
   document.getElementById('tab-batch').classList.toggle('on',m==='batch');
+  const ta=document.getElementById('batch-in');
+  if(m==='batch'&&!ta.value.trim())ta.value=batchTemplate();
 }
 
 function clearBatch(){
-  document.getElementById('batch-in').value='';
+  document.getElementById('batch-in').value=batchTemplate();
   BATCH=[];BATCH_WARN=[];BATCH_META={d:'',km:0};
   renderBatchPreview();
 }
@@ -794,6 +801,9 @@ function parseBatchText(raw){
     // 里程：里程 40000、車輛里程數：40000、40000 km 都吃
     m=s.match(/^(?:車輛里程數?|里程數?|里程|里程數|km|mileage)\s*[:：]?\s*([\d,]+)\s*(?:km|公里)?\s*$/i);
     if(m){meta.km=parseInt(m[1].replace(/,/g,''))||0;return;}
+
+    // 範本留下的空標頭(日期或里程沒填值)直接略過,不要當成品項
+    if(/^(?:日期|date|車輛里程數?|里程數?|里程|km|mileage)\s*[:：]?\s*$/i.test(s))return;
 
     // 單獨一行的分類名稱
     const c=s.replace(/[:：]\s*$/,'');
@@ -860,11 +870,10 @@ function commitBatch(){
     id:NEXT_ID++,b:it.b,n:it.n,p:it.p,c:it.c,s:st,d,mt:base-x,km:BATCH_META.km||undefined
   }));
   ITEMS.unshift(...fresh);
-  if(BATCH_META.km)VEHICLE.km=BATCH_META.km;
   const n=fresh.length;
   clearBatch();
   resetPage();renderAll();
-  toast('已加入 '+n+' 筆'+(BATCH_META.km?'，里程同步更新':''));
+  toast('已加入 '+n+' 筆');
 }
 
 /* ══════════ 紀錄模式 ══════════ */
@@ -1061,7 +1070,6 @@ function renderShow(){
     <div class="eyebrow">Owner's Build Sheet</div>
     <h2>${esc(VEHICLE.name||'我的愛車')}</h2>
     <div class="en">${esc(VEHICLE.sub||'Build Sheet')}</div>
-    ${VEHICLE.model?`<div class="model">${esc(VEHICLE.model)}</div>`:''}
     ${LAYOUT.cover?`<img class="cover" src="${LAYOUT.cover}" alt="" onclick="openLightbox(this.src)">`:''}`;
 
   const secOrder=LAYOUT.catOrder;
