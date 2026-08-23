@@ -93,7 +93,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .dot{width:8px;height:8px;border-radius:50%}
 .dot.on{background:var(--manx)}.dot.out{background:var(--gray)}.dot.wish{background:var(--gold)}
 .row .name{font-size:14px;font-weight:500}
-.row .name b{font-family:var(--num);font-weight:600;letter-spacing:.04em;color:var(--ink);margin-right:6px}
+.row .name b{font-family:var(--num);font-weight:600;letter-spacing:.04em;color:var(--ink);margin-right:6px;text-transform:uppercase}
 .row .meta{font-size:11.5px;color:var(--sub);margin-top:2px}
 .row .price{font-family:var(--num);font-weight:600;font-size:15px;text-align:right;white-space:nowrap}
 .row .price.tbd{color:var(--sub);font-size:12px;font-weight:500}
@@ -209,6 +209,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .cat-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
 .cat-row:last-child{border-bottom:none}
 .cat-row .b{font-family:var(--num);font-weight:600;font-size:12.5px;letter-spacing:.08em;color:var(--manx);min-width:86px;text-transform:uppercase}
+.cat-row .b.long{letter-spacing:0}
 .cat-row .n{font-size:14px;flex:1}
 .cat-row .p{font-family:var(--num);font-weight:600;font-size:14px;white-space:nowrap}
 .cat-row .p.tbd{color:var(--sub);font-size:12px;font-weight:500}
@@ -769,6 +770,8 @@ function clearBatch(){
 }
 
 // 從一行文字裡切出品牌與品項。優先順序：使用者明講 > 已知品牌 > 猜測
+const BRAND_LONG=10;   // 品牌超過這個字數就收字距，見 .cat-row .b.long
+
 function splitBrandName(text){
   const seg=text.split(/\s+/);
   // 1） 第一段有底線就是品牌，底線還原成空白（Shark_Factory → Shark Factory）。
@@ -1152,7 +1155,9 @@ function catRow(i){
     <button class="mini ${i.v===false?'eye-off':''}" onclick="toggleItem(${i.id})" title="顯示/隱藏">👁</button></span>`:'';
   const thumb=i.img?`<img class="thumb" src="${i.img}" alt="" onclick="openLightbox(this.src)" style="margin-right:10px">`
     :(SHOW_EDIT?`<span class="thumb-ph" onclick="pickItemPhoto(${i.id})" title="新增照片">📷</span>`:'');
-  return`<div class="cat-row ${SHOW_EDIT&&i.v===false?'dim':''}">${thumb}<span class="b">${esc(i.b)}</span><span class="n">${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</span>${tools}</div>`;
+  // 字數多的品牌收掉字距，才不會把後面的品項名推出對齊線
+  const bLong=(i.b||'').length>=BRAND_LONG?' long':'';
+  return`<div class="cat-row ${SHOW_EDIT&&i.v===false?'dim':''}">${thumb}<span class="b${bLong}">${esc(i.b)}</span><span class="n">${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</span>${tools}</div>`;
 }
 
 function toggleShowEdit(){SHOW_EDIT=!SHOW_EDIT;renderShow();}
