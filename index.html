@@ -729,7 +729,7 @@ function openLightbox(src){
 function renderAddons(){
   document.getElementById('addon-list').innerHTML=FORM_ADD.map((a,x)=>`
     <div class="addon-chip"><span class="t">${esc(a.t)}</span><span class="p">${fmt(a.p)}</span>
-    <button class="x" onclick="FORM_ADD.splice(${x}，1）；renderAddons（）" title="移除">✕</button></div>`).join('');
+    <button class="x" onclick="FORM_ADD.splice(${x},1);renderAddons()" title="移除">✕</button></div>`).join('');
 }
 function addAddon(){
   const t=document.getElementById('a-add-t').value.trim();
@@ -1106,11 +1106,11 @@ function renderShow(){
 function tuneCard(){
   if(!SHOW_EDIT&&(!LAYOUT.tune||!TUNE.length))return'';
   const tools=SHOW_EDIT?`<span class="tools">
-    <button class="mini ${LAYOUT.tune?'':'eye-off'}" onclick="LAYOUT.tune=！LAYOUT.tune；renderShow（）" title="顯示/隱藏">👁</button></span>`:'';
+    <button class="mini ${LAYOUT.tune?'':'eye-off'}" onclick="LAYOUT.tune=!LAYOUT.tune;renderShow()" title="顯示/隱藏">👁</button></span>`:'';
   const cells=TUNE.map((t,x)=>SHOW_EDIT?`
-    <div class="cell"><div class="k"><input value="${esc(t.k)}" onchange="TUNE[${x}].k=this.value；save（）" placeholder="項目名稱"></div>
-      <div class="v-row"><input class="v-in" value="${esc(t.v)}" onchange="TUNE[${x}].v=this.value；save（）" placeholder="設定值">
-      <button class="mini" onclick="TUNE.splice（${x}，1）；renderShow（）" title="移除">✕</button></div></div>`:`
+    <div class="cell"><div class="k"><input value="${esc(t.k)}" onchange="TUNE[${x}].k=this.value;save()" placeholder="項目名稱"></div>
+      <div class="v-row"><input class="v-in" value="${esc(t.v)}" onchange="TUNE[${x}].v=this.value;save()" placeholder="設定值">
+      <button class="mini" onclick="TUNE.splice(${x},1);renderShow()" title="移除">✕</button></div></div>`:`
     <div class="cell"><div class="k">${esc(t.k)}</div><div class="v">${esc(t.v)}</div></div>`).join('');
   const addBtn=SHOW_EDIT?`<button class="tune-add" onclick="TUNE.push({k:'',v:''});renderShow()">＋ 新增一格</button>`:'';
   const emptyHint=SHOW_EDIT&&!TUNE.length?'<div style="font-size:12px;color:var(--sub)">還沒有設定值 — 按下面新增一格，記下你的前後避震調校。</div>':'';
@@ -1126,7 +1126,7 @@ function groupSec(status,title,en,cls,visible){
   if(!SHOW_EDIT&&(!visible||!vis.length))return'';
   const list=SHOW_EDIT?all:vis;
   const secTools=SHOW_EDIT?`<span class="tools">
-    <button class="mini ${visible?'':'eye-off'}" onclick="LAYOUT.${status}=!LAYOUT.${status}；renderShow（）" title="顯示/隱藏整區">👁</button></span>`:'';
+    <button class="mini ${visible?'':'eye-off'}" onclick="LAYOUT.${status}=!LAYOUT.${status};renderShow()" title="顯示/隱藏整區">👁</button></span>`:'';
   return`<div class="sec ${cls} ${SHOW_EDIT&&!visible?'dim-sec':''}">
     <div class="sec-head"><h3>${title}<span class="en">　${en}</span></h3><span>${secTools}<span class="sum">　${vis.length} 件</span></span></div>
     ${list.map(catRow).join('')}</div>`;
@@ -1145,13 +1145,13 @@ function posGrouped(list){
 
 function catRow(i){
   const tools=SHOW_EDIT?`<span class="tools">
-    <button class="mini" onclick="moveItem(${i.id}，-1）" title="上移">▲</button>
-    <button class="mini" onclick="moveItem(${i.id}，1）" title="下移">▼</button>
+    <button class="mini" onclick="moveItem(${i.id},-1)" title="上移">▲</button>
+    <button class="mini" onclick="moveItem(${i.id},1)" title="下移">▼</button>
     <button class="mini ${i.img?'':'eye-off'}" onclick="pickItemPhoto(${i.id})" title="${i.img?'更換照片':'新增照片'}">📷</button>
     ${i.img?`<button class="mini" onclick="ITEMS.find(x=>x.id===${i.id}).img=null;renderShow()" title="移除照片">✕</button>`:''}
-    <button class="mini ${i.v===false?'eye-off':''}" onclick="toggleItem(${i.id}）" title="顯示/隱藏">👁</button></span>`:'';
+    <button class="mini ${i.v===false?'eye-off':''}" onclick="toggleItem(${i.id})" title="顯示/隱藏">👁</button></span>`:'';
   const thumb=i.img?`<img class="thumb" src="${i.img}" alt="" onclick="openLightbox(this.src)" style="margin-right:10px">`
-    :(SHOW_EDIT?`<span class="thumb-ph" onclick="pickItemPhoto(${i.id}）" title="新增照片">📷</span>`:'');
+    :(SHOW_EDIT?`<span class="thumb-ph" onclick="pickItemPhoto(${i.id})" title="新增照片">📷</span>`:'');
   return`<div class="cat-row ${SHOW_EDIT&&i.v===false?'dim':''}">${thumb}<span class="b">${esc(i.b)}</span><span class="n">${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</span>${tools}</div>`;
 }
 
