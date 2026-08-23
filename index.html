@@ -29,7 +29,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--tc);line-height:1.5
 .wrap{max-width:860px;margin:0 auto;padding:0 16px}
 
 /* ── header ── */
-header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#121A16 0%,var(--bg) 100%)}
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#121A16 0%,var(--bg) 100%);position:sticky;z-index:50}   /* top 由 syncStickyHead 動態設定 */
 .head-in{max-width:860px;margin:0 auto;padding:22px 16px 0}
 .eyebrow{font-family:var(--num);font-size:11px;letter-spacing:.32em;color:var(--manx);text-transform:uppercase}
 h1{font-weight:900;font-size:34px;letter-spacing:.06em;line-height:1.1;margin-top:4px}
@@ -734,6 +734,16 @@ function lastKm(){
   });
   return best;
 }
+
+// 讓標題區捲上去之後，模式切換鍵卡在畫面頂端跟著走。
+// 位移量得動態算：車名可能換行，標題區高度不是固定值。
+// 量的是兩個元素的相對距離，所以不論目前捲到哪、有沒有已經吸附，結果都一樣。
+function syncStickyHead(){
+  const h=document.querySelector('header'),m=document.querySelector('.mode');
+  if(!h||!m)return;
+  h.style.top=-(m.getBoundingClientRect().top-h.getBoundingClientRect().top)+'px';
+}
+addEventListener('resize',syncStickyHead);
 
 function renderName(){
   const nm=VEHICLE.name||'我的愛車';
@@ -1440,7 +1450,7 @@ function setMode(m){
   window.scrollTo({top:0});
 }
 
-function renderAll(){renderName();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();renderDataHint();}
+function renderAll(){renderName();syncStickyHead();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();renderDataHint();}
 
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
@@ -1450,6 +1460,8 @@ syncFormFields();
 document.getElementById('a-date').value=today();
 loadSaved();
 renderAll();
+// 字體晚一點才載完，標題高度會變，載完再校一次
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(syncStickyHead);
 doSave();
 </script>
 </body>
