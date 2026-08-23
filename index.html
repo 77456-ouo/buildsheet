@@ -1233,7 +1233,8 @@ function groupSec(status,title,en,cls,visible){
 
 function posGrouped(list,cat){
   if(!list.some(i=>i.pos))return list.map(catRow).join('');
-  return['F','R',''].map(pz=>{
+  // 不分區排最上面：那些是整車性的東西，前後半段接在後面
+  return['','F','R'].map(pz=>{
     const g=list.filter(i=>(i.pos||'')===pz);
     if(!g.length)return'';
     const[zh,en]=pz?posLabel(cat,pz):['',''];
