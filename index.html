@@ -451,7 +451,7 @@ Brembo 基本對四保養 1200
 </div>
 
 <script>
-const CATS=['保養耗材','制動','懸吊','動力','外觀','其他'];
+const CATS=['保養耗材','懸吊','制動','動力','外觀','其他'];
 const CAT_EN={制動:'Brake',懸吊:'Suspension',動力:'Powertrain',外觀:'Body & Parts',其他:'Misc',保養耗材:'Service'};
 // 保養不進展示頁，所以不參與展示分節與整區排序
 const SHOW_CATS=CATS.filter(c=>c!=='保養耗材');
@@ -495,7 +495,8 @@ function syncFormFields(wantStatus){
 // 舊分類 → 新大分類的對應表（之後想再調整分類定義，改這裡就好）
 const LEGACY={傳動:'動力',燈電:'外觀',操控:'外觀',保養:'保養耗材'};
 const STORE_KEY='buildsheet.v1';
-const SCHEMA=1;
+const SCHEMA=2;   // 2：分類預設順序改為 懸吊、制動、動力、外觀，見 applyData
+const CAT_ORDER_V1=['制動','懸吊','動力','外觀','其他'];   // v1 的預設順序
 
 /* ── 資料（空白起步，由 localStorage 或匯入檔載入） ── */
 let VEHICLE={name:'',sub:''};
@@ -565,8 +566,11 @@ function applyData(d){
   ITEMS=d.items.map(i=>({...i}));
   TUNE=Array.isArray(d.tune)?d.tune.map(t=>({k:t.k||'',v:t.v||''})):[];
   const L=d.layout||{};
-  const order=(Array.isArray(L.catOrder)?L.catOrder:[]).filter(c=>SHOW_CATS.includes(c));
+  let order=(Array.isArray(L.catOrder)?L.catOrder:[]).filter(c=>SHOW_CATS.includes(c));
   SHOW_CATS.forEach(c=>{if(!order.includes(c))order.push(c)});
+  // 沒自己調過順序的人換成新預設；調過的人保留自己的。
+  // 只在 v1 的資料上跑一次，存檔後 v 就是 2，之後怎麼調都不會被覆蓋。
+  if((Number(d.v)||1)<2&&order.join()===CAT_ORDER_V1.join())order=[...SHOW_CATS];
   LAYOUT={catOrder:order,wish:L.wish!==false,tune:L.tune!==false,cover:L.cover||null};
   // 正規化：舊分類轉新分類、補日期、金額轉數字
   ITEMS.forEach(i=>{
