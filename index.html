@@ -296,7 +296,11 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 
 .view{display:none}
 .view.on{display:block}
-footer{margin-top:36px;text-align:center;font-size:11.5px;color:#5c675e;letter-spacing:.06em}
+footer{margin-top:36px;padding-bottom:28px;text-align:center;font-size:11.5px;color:#5c675e;letter-spacing:.06em}
+footer .f-links{margin-top:8px;letter-spacing:.02em;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
+footer a{color:var(--sub);text-decoration:none;border-bottom:1px solid transparent}
+footer a:hover{color:var(--manx);border-bottom-color:var(--manx)}
+footer .f-sep{opacity:.5}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -429,7 +433,14 @@ Brembo 基本對四保養 1200
     <div id="show-wish"></div>
   </div>
 
-  <footer id="foot">BUILD SHEET · MOD LEDGER</footer>
+  <footer id="foot">
+    <div id="foot-sub">BUILD SHEET · MOD LEDGER</div>
+    <div class="f-links">
+      <span>作者 <a href="https://instagram.com/ovo_0017" target="_blank" rel="noopener">@ovo_0017</a></span>
+      <span class="f-sep">·</span>
+      <span>意見回饋 <a id="f-mail" href="#">—</a></span>
+    </div>
+  </footer>
 </div>
 
 <div id="lightbox" onclick="this.classList.remove('on')"><img id="lightbox-img" alt=""></div>
@@ -759,7 +770,8 @@ function renderName(){
   // 新增項目的里程欄位順便提示目前里程，省得使用者回頭查
   const last=lastKm();
   document.getElementById('a-km').placeholder=last?'選填，上次記錄 '+last.toLocaleString('zh-TW'):'選填';
-  document.getElementById('foot').textContent=VEHICLE.sub||'BUILD SHEET · MOD LEDGER';
+  // 只換標語那一行；作者與回饋信箱在下面另一個元素，不能被蓋掉
+  document.getElementById('foot-sub').textContent=VEHICLE.sub||'BUILD SHEET · MOD LEDGER';
   document.title=nm+' BUILD SHEET';
 }
 
@@ -1462,6 +1474,13 @@ document.getElementById('a-cat').value='制動';   // 選單首項是保養耗�
 document.getElementById('a-cat').addEventListener('change',syncFormFields);
 syncFormFields();
 document.getElementById('a-date').value=today();
+// 信箱拆開放，組合交給 JS —— 公開頁面上純文字的 mailto 會被機器人整批撈走
+(function(){
+  const a=document.getElementById('f-mail'),u='chienwaynek',d='gmail.com';
+  a.href='mailto:'+u+'@'+d;
+  a.textContent=u+'@'+d;
+})();
+
 loadSaved();
 renderAll();
 // 字體晚一點才載完，標題高度會變，載完再校一次
