@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2FBF71">
 <title>改裝帳本 BUILD SHEET</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -42,6 +43,7 @@ h1 small{display:block;font-family:var(--num);font-weight:600;font-size:12px;let
 
 /* ── 車名就地編輯 ── */
 h1.unset #veh-name{color:var(--sub);font-weight:700}
+#veh-sub.unset{opacity:.55;letter-spacing:.12em}   /* 還沒填車牌時的提示字 */
 /* 拉丁字母在 Noto Sans TC 有 2px 左側留白，中文幾乎沒有，
    補償後大標題才會與上下兩行的文字切齊 */
 h1.latin{margin-left:-2px}
@@ -181,6 +183,10 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .save-state{font-size:11.5px;color:var(--sub);margin-top:12px;line-height:1.7}
 .save-state.fail{color:#E08A8A}
 .data-hint{font-size:11.5px;color:var(--sub);margin-top:10px;line-height:1.7}
+.swatches{display:flex;flex-wrap:wrap;gap:10px}
+.sw{appearance:none;width:30px;height:30px;border-radius:50%;padding:0;cursor:pointer;background:var(--sw);border:2px solid transparent;box-shadow:0 0 0 1px var(--line)}
+.sw:hover{box-shadow:0 0 0 1px var(--sub)}
+.sw.on{border-color:var(--bg);box-shadow:0 0 0 2px var(--ink)}
 .dl-link{display:block;margin-top:8px;color:var(--manx);text-decoration:underline;text-underline-offset:3px;cursor:pointer;width:fit-content}
 .dl-link:active{opacity:.6}
 
@@ -308,12 +314,12 @@ footer .f-sep{opacity:.5}
 
 <header>
   <div class="head-in">
-    <div class="eyebrow">Build Sheet · Mod Ledger</div>
+    <div class="eyebrow" id="eyebrow"></div>
     <h1 id="veh-h1">
       <span id="veh-name" class="editable" onclick="editInline('name')" title="點一下修改車名">我的愛車</span>
       <input id="veh-name-in" class="inline-in" maxlength="24" placeholder="車名" hidden>
       <span class="pen" onclick="editInline('name')" title="修改車名">✎</span>
-      <small><span id="veh-sub" class="editable" onclick="editInline('sub')" title="點一下修改標語">BUILD SHEET</span><input id="veh-sub-in" class="inline-in" maxlength="48" placeholder="英文標語" hidden><span class="pen" onclick="editInline('sub')" title="修改標語">✎</span></small>
+      <small><span id="veh-sub" class="editable" onclick="editInline('sub')" title="點一下修改車牌">車牌</span><input id="veh-sub-in" class="inline-in" maxlength="16" placeholder="車牌號碼" hidden><span class="pen" onclick="editInline('sub')" title="修改車牌">✎</span></small>
     </h1>
     <div class="mode" role="tablist">
       <button id="tab-rec" class="on" onclick="setMode('rec')">紀錄模式</button>
@@ -409,6 +415,12 @@ Brembo 基本對四保養 1200
     <div class="count-note" id="count-note"></div>
 
     <div class="data-box">
+      <h3>主題色</h3>
+      <div class="swatches" id="swatches"></div>
+      <div class="data-hint">換掉整個 app 的識別色 —— 線條、品牌名、長條圖、頁籤亮線都會跟著變，展示模式也一樣。設定會跟著備份走。</div>
+    </div>
+
+    <div class="data-box">
       <h3>資料管理</h3>
       <div class="data-btns">
         <button onclick="exportData()">⬇ 備份資料</button>
@@ -434,7 +446,7 @@ Brembo 基本對四保養 1200
   </div>
 
   <footer id="foot">
-    <div id="foot-sub">BUILD SHEET · MOD LEDGER</div>
+    <div id="foot-sub"></div>
     <div class="f-links">
       <span>作者 <a href="https://instagram.com/ovo_0017" target="_blank" rel="noopener">@ovo_0017</a></span>
       <span class="f-sep">·</span>
@@ -506,6 +518,23 @@ function syncFormFields(wantStatus){
 // 舊分類 → 新大分類的對應表（之後想再調整分類定義，改這裡就好）
 const LEGACY={傳動:'動力',燈電:'外觀',操控:'外觀',保養:'保養耗材'};
 const STORE_KEY='buildsheet.v1';
+// app 的標語。眉標與頁尾共用，要換標語改這一行就好。
+// 主題色。都挑深色底上看得清楚的；刻意避開金色，那是願望清單在用的。
+const ACCENTS=[['#2FBF71','馬恩島綠'],['#2FD0C5','湖水青'],
+               ['#3AA9F5','天空藍'],['#9B7BF0','薰衣草'],
+               ['#F06AA0','桃紅'],  ['#F2913D','琥珀橘'],
+               ['#E8574C','賽車紅'],['#A8D84A','檸檬綠']];
+const ACCENT_DEFAULT=ACCENTS[0][0];
+
+// --manx-deep 是主題色的深色搭檔（分類底線、選中背景、長條圖漸層起點）。
+// 用主題色跟背景混出來，換色就自動跟上，不必每個顏色手配一組。
+function accentDeep(hex){
+  const v=parseInt(hex.slice(1),16),bg=[0x0F,0x15,0x12];
+  return'#'+[v>>16&255,v>>8&255,v&255]
+    .map((c,x)=>Math.round(c*.42+bg[x]*.58).toString(16).padStart(2,'0')).join('');
+}
+
+const TAGLINE='Build Sheet · Mod Ledger';
 const SCHEMA=2;   // 2：分類預設順序改為 懸吊、制動、動力、外觀，見 applyData
 const CAT_ORDER_V1=['制動','懸吊','動力','外觀','其他'];   // v1 的預設順序
 
@@ -513,7 +542,7 @@ const CAT_ORDER_V1=['制動','懸吊','動力','外觀','其他'];   // v1 的�
 let VEHICLE={name:'',sub:''};
 let ITEMS=[];
 let TUNE=[];
-let LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null};
+let LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,accent:ACCENT_DEFAULT};
 let NEXT_ID=0;
 let BK=0;         // 最後一次備份的時間
 let BK_SNOOZE=0;  // 備份提醒按「稍後再說」的時間
@@ -582,7 +611,10 @@ function applyData(d){
   // 沒自己調過順序的人換成新預設；調過的人保留自己的。
   // 只在 v1 的資料上跑一次，存檔後 v 就是 2，之後怎麼調都不會被覆蓋。
   if((Number(d.v)||1)<2&&order.join()===CAT_ORDER_V1.join())order=[...SHOW_CATS];
-  LAYOUT={catOrder:order,wish:L.wish!==false,tune:L.tune!==false,cover:L.cover||null};
+  // 驗證色票值：手改壞的檔案不該把顏色設成看不見的東西
+  const accent=ACCENTS.some(a=>a[0]===L.accent)?L.accent:ACCENT_DEFAULT;
+  LAYOUT={catOrder:order,wish:L.wish!==false,tune:L.tune!==false,
+          cover:L.cover||null,accent};
   // 正規化：舊分類轉新分類、補日期、金額轉數字
   ITEMS.forEach(i=>{
     // 舊版把保養記成第四種狀態，現在改成分類；舊備份還原時自動搬過去
@@ -714,7 +746,7 @@ function clearAll(){
   if(!confirm('確定要清空全部資料嗎？\n\n所有零件、照片、車名與版面設定都會刪除，無法復原。\n建議先按「備份資料」。'))return;
   if(!confirm('再確認一次 — 真的要全部清空？'))return;
   VEHICLE={name:'',sub:''};ITEMS=[];TUNE=[];NEXT_ID=0;
-  LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null};
+  LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,accent:ACCENT_DEFAULT};
   SHOW_EDIT=false;STATE.status='all';STATE.cat='all';STATE.q='';
   document.getElementById('q').value='';
   resetForm();renderAll();doSave();
@@ -734,7 +766,7 @@ function toast(msg){
 const VEH_FIELDS={
   name :{span:'veh-name', input:'veh-name-in', label:'車名',
          get:()=>VEHICLE.name, set:v=>VEHICLE.name=v},
-  sub  :{span:'veh-sub',  input:'veh-sub-in',  label:'標語',
+  sub  :{span:'veh-sub',  input:'veh-sub-in',  label:'車牌',
          get:()=>VEHICLE.sub,  set:v=>VEHICLE.sub=v}
 };
 
@@ -766,12 +798,12 @@ function renderName(){
   const h1=document.getElementById('veh-h1');
   h1.classList.toggle('unset',!VEHICLE.name);
   h1.classList.toggle('latin',/^[A-Za-z0-9]/.test(nm));
-  document.getElementById('veh-sub').textContent=VEHICLE.sub||'BUILD SHEET';
+  const sub=document.getElementById('veh-sub');
+  sub.textContent=VEHICLE.sub||'車牌';
+  sub.classList.toggle('unset',!VEHICLE.sub);
   // 新增項目的里程欄位順便提示目前里程，省得使用者回頭查
   const last=lastKm();
   document.getElementById('a-km').placeholder=last?'選填，上次記錄 '+last.toLocaleString('zh-TW'):'選填';
-  // 只換標語那一行；作者與回饋信箱在下面另一個元素，不能被蓋掉
-  document.getElementById('foot-sub').textContent=VEHICLE.sub||'BUILD SHEET · MOD LEDGER';
   document.title=nm+' BUILD SHEET';
 }
 
@@ -1198,7 +1230,7 @@ function renderShow(){
   plate.innerHTML=`
     <div class="eyebrow">Owner's Build Sheet</div>
     <h2>${esc(VEHICLE.name||'我的愛車')}</h2>
-    <div class="en">${esc(VEHICLE.sub||'Build Sheet')}</div>
+    ${VEHICLE.sub?`<div class="en">${esc(VEHICLE.sub)}</div>`:''}
     ${LAYOUT.cover?`<img class="cover" src="${LAYOUT.cover}" alt="" onclick="openLightbox(this.src)">`:''}`;
 
   const secOrder=LAYOUT.catOrder;
@@ -1466,7 +1498,25 @@ function setMode(m){
   window.scrollTo({top:0});
 }
 
-function renderAll(){renderName();syncStickyHead();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();renderDataHint();}
+function renderTheme(){
+  const c=LAYOUT.accent||ACCENT_DEFAULT;
+  document.documentElement.style.setProperty('--manx',c);
+  document.documentElement.style.setProperty('--manx-deep',accentDeep(c));
+  const meta=document.querySelector('meta[name=theme-color]');
+  if(meta)meta.content=c;   // 手機瀏覽器的網址列
+  document.getElementById('swatches').innerHTML=ACCENTS.map(([hex,name])=>
+    `<button class="sw${hex===c?' on':''}" style="--sw:${hex}" title="${name}"
+      aria-label="${name}" onclick="setAccent('${hex}')"></button>`).join('');
+}
+
+function setAccent(hex){
+  LAYOUT.accent=hex;
+  renderTheme();save();
+  const hit=ACCENTS.find(a=>a[0]===hex);
+  toast('主題色已換成'+(hit?hit[1]:hex));
+}
+
+function renderAll(){renderName();renderTheme();syncStickyHead();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();renderDataHint();}
 
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
@@ -1480,6 +1530,9 @@ document.getElementById('a-date').value=today();
   a.href='mailto:'+u+'@'+d;
   a.textContent=u+'@'+d;
 })();
+
+document.getElementById('eyebrow').textContent=TAGLINE;
+document.getElementById('foot-sub').textContent=TAGLINE.toUpperCase();
 
 loadSaved();
 renderAll();
