@@ -255,10 +255,6 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .tune-add{margin-top:10px;appearance:none;background:transparent;border:1px dashed var(--line);color:var(--sub);border-radius:8px;font-family:var(--tc);font-size:12.5px;padding:8px 14px;cursor:pointer;width:100%}
 .tune-add:hover{color:var(--ink);border-color:var(--sub)}
 .sub-div{font-family:var(--num);font-size:10px;font-weight:600;letter-spacing:.26em;color:var(--sub);text-transform:uppercase;margin:12px 0 2px;padding-left:2px}
-.thumb{width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--line);flex-shrink:0;background:#0C110E}
-.cat-row .thumb{width:44px;height:44px;cursor:zoom-in}
-.thumb-ph{width:44px;height:44px;border-radius:8px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--sub);cursor:pointer;flex-shrink:0;margin-right:10px}
-.thumb-ph:hover{color:var(--ink);border-color:var(--sub)}
 .cover{width:100%;height:190px;object-fit:cover;border-radius:10px;margin:18px 0 0;border:1px solid #2c3a31;cursor:zoom-in}
 .cover-btns{display:flex;gap:8px;justify-content:flex-end;margin:8px 0 18px;flex-wrap:wrap}
 .cover-btns button{appearance:none;background:var(--panel);border:1px solid var(--line);color:var(--sub);border-radius:8px;font-size:12.5px;font-family:var(--tc);padding:7px 14px;cursor:pointer}
@@ -345,6 +341,7 @@ footer .f-sep{opacity:.5}
       <h3>批次貼上</h3>
       <div class="batch-help">
         分類骨架已經幫你排好，<b>在各分類下面補上項目</b>就好，用不到的分類留空即可。<b>保養耗材</b>也是其中一個分類，換零件順便保養可以寫在同一份裡。<br>
+        · 外觀底下已排好<b>不分區／前半段／後半段</b>，寫在哪一段就歸哪一段<br>
         · 項目寫成 <b>品牌 品項名稱 金額</b>，沒有品牌就直接寫品項<br>
         · 品牌名稱有空格時用<b>底線</b>連起來：<b>Shark_Factory X2 後避震 25300</b><br>
         · 最上面的<b>日期</b>與<b>里程</b>會套用到這批全部項目<br>
@@ -469,7 +466,6 @@ Brembo 基本對四保養 1200
 <div id="toast"></div>
 <div hidden>
   <input type="file" id="a-cover" accept="image/*" onchange="pickCover(this)">
-  <input type="file" id="item-photo-input" accept="image/*" onchange="onItemPhotoChosen(this)">
   <input type="file" id="import-file" accept=".txt,.json,text/plain,application/json" onchange="importData(this)">
 </div>
 
@@ -548,7 +544,7 @@ let BK=0;         // 最後一次備份的時間
 let BK_SNOOZE=0;  // 備份提醒按「稍後再說」的時間
 const DAY=86400000;
 
-let SWAP_ID=null,EDIT_ID=null,FORM_ADD=[],SHOW_EDIT=false,PHOTO_TARGET=null;
+let SWAP_ID=null,EDIT_ID=null,FORM_ADD=[],SHOW_EDIT=false;
 const STATE={status:'all',cat:'all',q:''};
 const PAGE_SIZE=10;         // 紀錄模式清單每頁筆數
 let PAGE=1;
@@ -626,6 +622,7 @@ function applyData(d){
     i.p=Math.max(0,parseInt(i.p)||0);
     if(i.mt!=null)i.mt=Number(i.mt)||0;   // 最後修改時間，舊備份沒有此欄位
     delete i.rec;                          // 回收金額已停用，清掉舊備份的殘留
+    delete i.img;                          // 逐項照片已移除，不留著白佔儲存空間
     if(i.km!=null)i.km=Math.max(0,parseInt(i.km)||0)||undefined;
     if(i.add)i.add=i.add.filter(a=>a&&a.t).map(a=>({t:a.t,p:Math.max(0,parseInt(a.p)||0)}));
   });
@@ -848,12 +845,6 @@ function downscale(file,cb){
     img.src=e.target.result;};
   r.readAsDataURL(file);
 }
-function pickItemPhoto(id){PHOTO_TARGET=id;document.getElementById('item-photo-input').click();}
-function onItemPhotoChosen(inp){
-  const f=inp.files&&inp.files[0];if(!f||PHOTO_TARGET===null){inp.value='';return;}
-  downscale(f,url=>{const it=ITEMS.find(i=>i.id===PHOTO_TARGET);if(it){it.img=url;renderShow();}});
-  inp.value='';
-}
 function pickCover(inp){
   const f=inp.files&&inp.files[0];if(!f)return;
   downscale(f,url=>{LAYOUT.cover=url;renderShow();});
@@ -885,8 +876,14 @@ let BATCH=[],BATCH_META={d:'',km:0},BATCH_WARN=[];
 // 預先把分類骨架填好，使用者只要在各分類下面補項目，
 // 不用記分類名稱怎麼寫，也不會打錯字。用不到的分類留空即可。
 function batchTemplate(){
-  return['日期 '+today(),'里程 '+(lastKm()||''),'',
-         ...CATS.flatMap(c=>[c,'',''])].join('\n').trimEnd()+'\n';
+  const body=CATS.flatMap(c=>{
+    const m=POS_CATS[c];
+    if(!m)return[c,'',''];
+    // 有分區的分類（目前只有外觀）先把三個位置排好，用不到的留空就好
+    return[c,'','  不分區','','  '+m.F[0],'','  '+m.R[0],'',''];
+  });
+  return['日期 '+today(),'里程 '+(lastKm()||''),'',...body]
+    .join('\n').trimEnd()+'\n';
 }
 
 function setAddMode(m){
@@ -924,7 +921,7 @@ function splitBrandName(text){
 // 把貼上的文字解析成項目清單。規則刻意寬鬆，解析完一定要讓使用者過目。
 function parseBatchText(raw){
   const items=[],warnings=[],meta={d:'',km:0};
-  let cat=null;
+  let cat=null,pos='';
   raw.split(/\r?\n/).forEach((line,idx)=>{
     const s=line.replace(/　/g,' ').trim();   // 全形空白轉半形
     if(!s)return;
@@ -945,7 +942,16 @@ function parseBatchText(raw){
 
     // 單獨一行的分類名稱
     const c=s.replace(/[:：]\s*$/,'');
-    if(CATS.includes(c)){cat=c;return;}
+    if(CATS.includes(c)){cat=c;pos='';return;}
+
+    // 位置標題只在有分區設定的分類底下才算數（目前只有外觀）。
+    // 這樣在制動底下寫「前半段」不會被誤判，會照常當成品項。
+    const pm=POS_CATS[cat];
+    if(pm){
+      if(c==='不分區'){pos='';return;}
+      const hit=['F','R'].find(k=>pm[k][0]===c);
+      if(hit){pos=hit;return;}
+    }
 
     // 其餘視為項目：最後一段是數字就當金額
     const parts=s.split(/\s+/);
@@ -958,7 +964,7 @@ function parseBatchText(raw){
     if(!n){warnings.push('第 '+no+' 行看不出品項，已略過');return;}
     if(!cat)warnings.push('第 '+no+' 行前面沒有分類，先歸到「其他」：'+n);
 
-    items.push({b,n,p,c:cat||'其他'});
+    items.push({b,n,p,c:cat||'其他',pos:pos||undefined});
   });
   return{items,meta,warnings};
 }
@@ -1005,7 +1011,8 @@ function commitBatch(){
   // mt 依貼上順序遞減，清單才會照原本的順序排，而不是整批倒過來
   const base=stamp();
   const fresh=BATCH.map((it,x)=>({
-    id:NEXT_ID++,b:it.b,n:it.n,p:it.p,c:it.c,s:st,d,mt:base-x,km:BATCH_META.km||undefined
+    id:NEXT_ID++,b:it.b,n:it.n,p:it.p,c:it.c,pos:it.pos,s:st,d,mt:base-x,
+    km:BATCH_META.km||undefined
   }));
   ITEMS.unshift(...fresh);
   const n=fresh.length;
@@ -1311,14 +1318,10 @@ function catRow(i){
   // 排序改用左邊的把手拖曳，▲▼ 拿掉之後這一列也寬鬆不少
   const handle=SHOW_EDIT?`<span class="drag" title="按住拖曳排序">⠿</span>`:'';
   const tools=SHOW_EDIT?`<span class="tools">
-    <button class="mini ${i.img?'':'eye-off'}" onclick="pickItemPhoto(${i.id})" title="${i.img?'更換照片':'新增照片'}">📷</button>
-    ${i.img?`<button class="mini" onclick="ITEMS.find(x=>x.id===${i.id}).img=null;renderShow()" title="移除照片">✕</button>`:''}
     <button class="mini ${i.v===false?'eye-off':''}" onclick="toggleItem(${i.id})" title="顯示/隱藏">👁</button></span>`:'';
-  const thumb=i.img?`<img class="thumb" src="${i.img}" alt="" onclick="openLightbox(this.src)" style="margin-right:10px">`
-    :(SHOW_EDIT?`<span class="thumb-ph" onclick="pickItemPhoto(${i.id})" title="新增照片">📷</span>`:'');
   // 保險：品牌長到連 116px 都裝不下時收掉字距，減輕對品項名的推擠
   const bLong=(i.b||'').length>=BRAND_LONG?' long':'';
-  return`<div class="cat-row ${SHOW_EDIT&&i.v===false?'dim':''}" data-id="${i.id}">${handle}${thumb}<span class="b${bLong}">${esc(i.b)}</span><span class="n">${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</span>${tools}</div>`;
+  return`<div class="cat-row ${SHOW_EDIT&&i.v===false?'dim':''}" data-id="${i.id}">${handle}<span class="b${bLong}">${esc(i.b)}</span><span class="n">${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</span>${tools}</div>`;
 }
 
 function toggleShowEdit(){SHOW_EDIT=!SHOW_EDIT;renderShow();}
