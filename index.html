@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Build Sheet 改裝帳本 · 部署 2026-08-30 · 介面減肥 -->
+<!-- Build Sheet 改裝帳本 · 部署 2026-08-30 · 展示版面上鎖 + 封面焦點 -->
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -246,6 +246,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 /* ── showcase edit tools ── */
 .show-tools{display:flex;gap:8px;justify-content:flex-end;margin:16px 0 -8px}
 .show-tools .chip.on{border-color:var(--manx);color:var(--ink);background:var(--manx-deep)}
+.show-tools .chip.lock.on{border-color:var(--gold);color:var(--gold);background:#3E3218}
 .edit-hint{font-size:11.5px;color:var(--sub);text-align:right;margin:6px 0 0}
 .tools{display:inline-flex;gap:4px;margin-left:8px;flex-shrink:0}
 .mini{appearance:none;background:var(--panel2);border:1px solid var(--line);color:var(--sub);border-radius:6px;font-size:11px;width:26px;height:26px;cursor:pointer;line-height:1;padding:0}
@@ -268,7 +269,11 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .tune-add{margin-top:10px;appearance:none;background:transparent;border:1px dashed var(--line);color:var(--sub);border-radius:8px;font-family:var(--tc);font-size:12.5px;padding:8px 14px;cursor:pointer;width:100%}
 .tune-add:hover{color:var(--ink);border-color:var(--sub)}
 .sub-div{font-family:var(--num);font-size:10px;font-weight:600;letter-spacing:.26em;color:var(--sub);text-transform:uppercase;margin:12px 0 2px;padding-left:2px}
-.cover{width:100%;height:190px;object-fit:cover;border-radius:10px;margin:18px 0 0;border:1px solid #2c3a31;cursor:zoom-in}
+.cover{width:100%;height:190px;object-fit:cover;object-position:50% 50%;border-radius:10px;margin:18px 0 0;border:1px solid #2c3a31;cursor:zoom-in}
+/* 編輯版面時改成拖曳調整焦點，touch-action 讓手機不要跟著捲動 */
+.cover.adj{cursor:grab;touch-action:none}
+.cover.adj:active{cursor:grabbing}
+.cover-tip{font-size:11.5px;color:var(--sub);text-align:center;margin-top:6px}
 .cover-btns{display:flex;gap:8px;justify-content:flex-end;margin:8px 0 18px;flex-wrap:wrap}
 .cover-btns button{appearance:none;background:var(--panel);border:1px solid var(--line);color:var(--sub);border-radius:8px;font-size:12.5px;font-family:var(--tc);padding:7px 14px;cursor:pointer}
 #lightbox{position:fixed;inset:0;background:rgba(8,13,10,.93);display:none;align-items:center;justify-content:center;z-index:60;padding:18px;cursor:zoom-out}
@@ -444,6 +449,7 @@ Brembo 基本對四保養 1200
     <div class="show-tools">
       <button class="chip" onclick="openPicker()">☑ 挑選展示</button>
       <button class="chip" id="btn-layout" onclick="toggleShowEdit()">✎ 編輯版面</button>
+      <button class="chip lock" id="btn-lock" onclick="toggleLock()"></button>
     </div>
     <div class="edit-hint" id="edit-hint" hidden>按住 ⠿ 拖曳排序 · 👁 決定要不要展示（只影響這一頁）</div>
     <div class="plate" id="plate"></div>
@@ -548,7 +554,7 @@ const CAT_ORDER_V1=['制動','懸吊','動力','外觀','其他'];   // v1 的�
 let VEHICLE={name:'',sub:''};
 let ITEMS=[];
 let TUNE=[];
-let LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,accent:ACCENT_DEFAULT,hideMoney:false};
+let LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,coverPos:null,accent:ACCENT_DEFAULT,hideMoney:false,lock:false};
 let NEXT_ID=0;
 let BK=0;         // 最後一次備份的時間
 let BK_SNOOZE=0;  // 備份提醒按「稍後再說」的時間
@@ -626,8 +632,12 @@ function applyData(d){
   if((Number(d.v)||1)<2&&order.join()===CAT_ORDER_V1.join())order=[...SHOW_CATS];
   // 驗證色票值：手改壞的檔案不該把顏色設成看不見的東西
   const accent=ACCENTS.some(a=>a[0]===L.accent)?L.accent:ACCENT_DEFAULT;
+  // 封面焦點是兩個 0–100 的百分比，壞值就當沒設定（回到置中）
+  const cp=L.coverPos,pos=cp&&[cp.x,cp.y].every(v=>typeof v==='number'&&v>=0&&v<=100)
+    ?{x:cp.x,y:cp.y}:null;
   LAYOUT={catOrder:order,wish:L.wish!==false,tune:L.tune!==false,
-          cover:L.cover||null,accent,hideMoney:L.hideMoney===true};
+          cover:L.cover||null,coverPos:pos,accent,
+          hideMoney:L.hideMoney===true,lock:L.lock===true};
   // 正規化：舊分類轉新分類、補日期、金額轉數字
   ITEMS.forEach(i=>{
     // 舊版把保養記成第四種狀態，現在改成分類；舊備份還原時自動搬過去
@@ -761,7 +771,7 @@ function clearAll(){
   if(!confirm('確定要清空全部資料嗎？\n\n所有零件、照片、車名與版面設定都會刪除，無法復原。\n建議先按「備份資料」。'))return;
   if(!confirm('再確認一次 — 真的要全部清空？'))return;
   VEHICLE={name:'',sub:''};ITEMS=[];TUNE=[];NEXT_ID=0;
-  LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,accent:ACCENT_DEFAULT,hideMoney:false};
+  LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,coverPos:null,accent:ACCENT_DEFAULT,hideMoney:false,lock:false};
   SHOW_EDIT=false;STATE.status='all';STATE.cat='all';STATE.q='';
   document.getElementById('q').value='';
   resetForm();renderAll();doSave();
@@ -1082,21 +1092,29 @@ function commitBatch(){
   // mt 依貼上順序遞減，清單才會照原本的順序排，而不是整批倒過來
   const base=stamp();
   let swapped=0;
-  const fresh=BATCH.map((it,x)=>{
-    // 汰換：舊件轉退役並退出展示，新件把位置與耗材標記接過來
+  // 汰換的新件接手舊件在展示版面上的位置，其餘的排到最後面，
+  // 這樣貼一批保養耗材不會把排好的展示頁整個打亂。
+  const tail=[];
+  BATCH.forEach((it,x)=>{
     const old=it.sw!=null?ITEMS.find(i=>i.id===it.sw):null;
-    if(old){old.s='out';old.v=false;old.mt=base-x;swapped++;}
-    return{
+    const item={
       id:NEXT_ID++,b:it.b,n:it.n,p:it.p,c:it.c,
       pos:it.pos||(old&&old.pos)||undefined,
+      v:old?old.v:(LAYOUT.lock?false:undefined),
       s:st,d,mt:base-x,km:BATCH_META.km||undefined
     };
+    if(old){
+      const k=ITEMS.indexOf(old);
+      old.s='out';old.v=false;old.mt=base-x;swapped++;
+      ITEMS.splice(k,0,item);
+    }else tail.push(item);
   });
-  ITEMS.unshift(...fresh);
-  const n=fresh.length;
+  ITEMS.push(...tail);
+  const n=BATCH.length;
   clearBatch();
   resetPage();renderAll();
-  toast('已加入 '+n+' 筆'+(swapped?'，汰換 '+swapped+' 筆':''));
+  toast('已加入 '+n+' 筆'+(swapped?'，汰換 '+swapped+' 筆':'')
+    +(LAYOUT.lock&&n>swapped?'（版面已鎖，新項目沒有自動上展示）':''));
 }
 
 /* ══════════ 紀錄模式 ══════════ */
@@ -1222,20 +1240,26 @@ function saveItem(){
   const pos=document.getElementById('a-pos').value||undefined;
   const km=parseInt(document.getElementById('a-km').value)||undefined;   // 安裝或保養當下的里程
   const mt=stamp();
+  const addon=FORM_ADD.length?[...FORM_ADD]:undefined;
   if(SWAP_ID!==null){
-    // 汰換：舊件轉退役，新件以現役入帳
+    // 汰換：舊件轉退役，新件接手它在展示版面上的位置與顯示狀態。
+    // 那是同一個東西換新的，不是新東西，版面不該因此重排。
     const old=ITEMS.find(i=>i.id===SWAP_ID);
+    const fresh={id:NEXT_ID++,b,n,p,c,s:'on',d,pos,km,mt,v:old?old.v:undefined,add:addon};
     if(old){
+      const x=ITEMS.indexOf(old);
       old.s='out';
       old.v=false; // 退役品預設不放進展示頁，想放再去展示模式點亮
       old.mt=mt;
-    }
-    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s:'on',d,pos,km,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+      ITEMS.splice(x,0,fresh);   // 插在舊件原本的位置上
+    }else ITEMS.push(fresh);
   }else if(EDIT_ID===null){
-    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s,d,pos,km,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+    // 排在最後：插到最前面會讓展示模式排好的順序整個被擠掉
+    ITEMS.push({id:NEXT_ID++,b,n,p,c,s,d,pos,km,mt,
+      v:LAYOUT.lock?false:undefined,add:addon});
   }else{
     const it=ITEMS.find(i=>i.id===EDIT_ID);
-    if(it)Object.assign(it,{b,n,p,c,s,d,pos,km,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+    if(it)Object.assign(it,{b,n,p,c,s,d,pos,km,mt,add:addon});
   }
   resetPage();          // 剛動過的項目會排在第一頁最前面
   resetForm();renderAll();
@@ -1322,7 +1346,10 @@ function renderShow(){
     <div class="eyebrow">Owner's Build Sheet</div>
     <h2>${esc(VEHICLE.name||'我的愛車')}</h2>
     ${VEHICLE.sub?`<div class="en">${esc(VEHICLE.sub)}</div>`:''}
-    ${LAYOUT.cover?`<img class="cover" src="${LAYOUT.cover}" alt="" onclick="openLightbox(this.src)">`:''}`;
+    ${LAYOUT.cover?`<img class="cover${SHOW_EDIT?' adj':''}" src="${LAYOUT.cover}" alt=""
+      style="object-position:${coverPos().x}% ${coverPos().y}%"
+      ${SHOW_EDIT?'onpointerdown="coverDragStart(event)"':'onclick="openLightbox(this.src)"'}>`:''}
+    ${LAYOUT.cover&&SHOW_EDIT?'<div class="cover-tip">拖曳照片可以調整要露出哪一段</div>':''}`;
 
   const secOrder=LAYOUT.catOrder;
   const secsHtml=secOrder.map((c,pos)=>{
@@ -1348,10 +1375,12 @@ function renderShow(){
 
   document.getElementById('cover-btns').innerHTML=SHOW_EDIT?`
     <button onclick="document.getElementById('a-cover').click()">${LAYOUT.cover?'更換封面照':'＋ 設定封面照'}</button>
-    ${LAYOUT.cover?'<button onclick="LAYOUT.cover=null;renderShow()">移除封面</button>':''}`:'';
+    ${LAYOUT.cover&&LAYOUT.coverPos?'<button onclick="LAYOUT.coverPos=null;renderShow();save()">位置置中</button>':''}
+    ${LAYOUT.cover?'<button onclick="LAYOUT.cover=null;LAYOUT.coverPos=null;renderShow()">移除封面</button>':''}`:'';
   document.getElementById('btn-layout').textContent=SHOW_EDIT?'✔ 完成':'✎ 編輯版面';
   document.getElementById('btn-layout').classList.toggle('on',SHOW_EDIT);
   document.getElementById('edit-hint').hidden=!SHOW_EDIT;
+  renderLockBtn();
   save();
 }
 
@@ -1408,7 +1437,60 @@ function catRow(i){
   return`<div class="cat-row ${SHOW_EDIT&&i.v===false?'dim':''}" data-id="${i.id}">${handle}<span class="b${bLong}">${esc(i.b)}</span><span class="n">${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</span>${tools}</div>`;
 }
 
+/* ── 封面照的焦點 ──
+   object-fit:cover 只會裁中間，長照片的重點常常剛好被切掉。
+   編輯版面時拖曳照片就能決定要露出哪一段，位置存成兩個百分比。 */
+const coverPos=()=>LAYOUT.coverPos||{x:50,y:50};
+let COVER_DRAG=null;
+
+function coverDragStart(e){
+  const img=e.currentTarget;
+  COVER_DRAG={img,x0:e.clientX,y0:e.clientY,
+              from:{...coverPos()},w:img.clientWidth,h:img.clientHeight};
+  img.setPointerCapture(e.pointerId);
+  e.preventDefault();
+}
+
+function coverDragMove(e){
+  if(!COVER_DRAG)return;
+  const d=COVER_DRAG,cl=(v)=>Math.max(0,Math.min(100,v));
+  // 往下拖 = 想看上面那一段，所以百分比要往回走
+  const x=cl(d.from.x-(e.clientX-d.x0)/d.w*100);
+  const y=cl(d.from.y-(e.clientY-d.y0)/d.h*100);
+  LAYOUT.coverPos={x:Math.round(x),y:Math.round(y)};
+  d.img.style.objectPosition=LAYOUT.coverPos.x+'% '+LAYOUT.coverPos.y+'%';
+}
+
+function coverDragEnd(){
+  if(!COVER_DRAG)return;
+  COVER_DRAG=null;
+  renderShow();save();
+}
+
+document.addEventListener('pointermove',coverDragMove);
+document.addEventListener('pointerup',coverDragEnd);
+document.addEventListener('pointercancel',coverDragEnd);
+
 function toggleShowEdit(){SHOW_EDIT=!SHOW_EDIT;renderShow();}
+
+/* 鎖上之後新加的東西不會自動上展示，排好的版面就不會被動到。
+   汰換是例外：那是同一個東西換新的，新件直接接手舊件的位置與顯示狀態。 */
+function toggleLock(){
+  LAYOUT.lock=!LAYOUT.lock;
+  renderShow();save();
+  toast(LAYOUT.lock?'版面已鎖定，之後新增的項目不會自動上展示':'版面已解鎖');
+}
+
+function renderLockBtn(){
+  const b=document.getElementById('btn-lock');
+  const hidden=pickable().filter(i=>i.v===false).length;
+  b.classList.toggle('on',!!LAYOUT.lock);
+  b.textContent=(LAYOUT.lock?'🔒 版面已鎖':'🔓 版面未鎖')+(hidden?' '+hidden:'');
+  b.title=LAYOUT.lock
+    ?'新增的項目不會自動出現在這一頁，要用「挑選展示」自己放上去'
+    +(hidden?'（目前有 '+hidden+' 件沒展示）':'')
+    :'點一下鎖定：之後新增的項目不會自動出現在這一頁';
+}
 
 /* ── 拖曳排序 ── */
 let DRAG=null;
