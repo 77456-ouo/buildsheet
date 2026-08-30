@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Build Sheet 改裝帳本 · 部署 2026-08-28 -->
+<!-- Build Sheet 改裝帳本 · 部署 2026-08-30 · 隱藏金額 + 耗材標記 + 批次汰換 -->
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -37,10 +37,14 @@ header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#12
 h1{font-weight:900;font-size:34px;letter-spacing:.06em;line-height:1.1;margin-top:4px}
 h1 small{display:block;font-family:var(--num);font-weight:600;font-size:12px;letter-spacing:.28em;color:var(--sub);margin-top:6px}
 @media(max-width:420px){h1{font-size:27px}}
-.mode{display:flex;gap:0;margin-top:20px;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;overflow:hidden;width:fit-content}
+.mode{display:flex;gap:0;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;overflow:hidden;width:fit-content}
 .mode button{appearance:none;border:none;background:transparent;color:var(--sub);font-family:var(--tc);font-weight:700;font-size:14px;padding:10px 22px;cursor:pointer;transition:.15s}
 .mode button.on{background:var(--panel2);color:var(--ink);box-shadow:inset 0 2px 0 var(--manx)}
 .mode button:focus-visible{outline:2px solid var(--manx);outline-offset:-2px}
+.mode-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:20px}
+.money-btn{appearance:none;background:var(--panel);border:1px solid var(--line);color:var(--sub);font-family:var(--tc);font-weight:700;font-size:12px;letter-spacing:.04em;padding:7px 12px;border-radius:8px;cursor:pointer;margin-bottom:6px;transition:.15s;white-space:nowrap}
+.money-btn.off{border-color:var(--gold);color:var(--gold);background:#3E3218}
+.money-btn:focus-visible{outline:2px solid var(--manx);outline-offset:2px}
 
 /* ── 車名就地編輯 ── */
 h1.unset #veh-name{color:var(--sub);font-weight:700}
@@ -70,6 +74,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .stat.wish .v{color:var(--gold)}
 .stat.out .v{color:var(--gray)}
 .stat.srv .v{color:var(--sub)}
+.stat .sub{font-size:11px;color:var(--sub);margin-top:5px;letter-spacing:.02em}
 
 /* ── bars ── */
 .bars{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px}
@@ -127,6 +132,10 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .addbox input,.addbox select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:var(--tc);font-size:14px;padding:9px 10px}
 .addbox input:focus,.addbox select:focus{outline:none;border-color:var(--manx)}
 .addbox .full{grid-column:1/-1}
+.addbox .chk{display:flex;flex-direction:column;justify-content:center}
+.addbox .chk label{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink);margin:0;cursor:pointer}
+.addbox .chk input{width:16px;height:16px;flex:none;padding:0;accent-color:var(--manx)}
+.addbox .chk-note{font-size:11px;color:var(--sub);margin-top:5px;line-height:1.5}
 .addbox .btns{display:flex;gap:8px;margin-top:12px}
 .addbox .btns button{appearance:none;border:none;font-family:var(--tc);font-weight:700;font-size:14px;padding:11px 18px;border-radius:9px;cursor:pointer}
 .addbox .btns .main{background:var(--manx);color:#08130D;flex:1}
@@ -135,6 +144,7 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .addbox .btns .swap{background:#3E3218;border:1px solid #5A4A26;color:var(--gold)}
 .addbox .btns button:active{transform:translateY(1px)}
 .badge{display:inline-block;font-size:10px;font-weight:500;color:var(--gold);border:1px solid #5A4A26;border-radius:4px;padding:1px 6px;margin-left:7px;vertical-align:2px;letter-spacing:.12em}
+.badge.wear{color:var(--sub);border-color:var(--line)}
 .addon-box{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
 .addon-box>label{display:block;font-size:11.5px;color:var(--sub);margin-bottom:6px}
 .addon-chip{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--bg);border:1px solid #3E3218;border-radius:8px;padding:7px 10px;margin-bottom:6px;font-size:13px}
@@ -157,10 +167,16 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .batch-head{font-size:12.5px;color:var(--ink);margin:14px 0 8px;padding-top:12px;border-top:1px dashed var(--line);line-height:1.8}
 .batch-head span{color:var(--sub);font-size:11.5px}
 .batch-warn{background:#241F14;border:1px solid #5A4A26;border-radius:8px;padding:9px 11px;font-size:11.5px;color:var(--gold);line-height:1.7;margin-bottom:10px}
-.batch-rows{display:grid;gap:6px}
+.batch-rows{display:grid;gap:12px}
+.batch-item{display:grid;gap:5px}
 .batch-row{display:grid;grid-template-columns:74px 84px 1fr 74px 26px;gap:5px;align-items:center}
 .batch-row select,.batch-row input{width:100%;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:7px;color:var(--ink);font-family:var(--tc);font-size:12.5px;padding:7px 6px}
 .batch-row select:focus,.batch-row input:focus{outline:none;border-color:var(--manx)}
+.batch-sw{display:flex;align-items:center;gap:6px;padding-left:2px;font-size:11.5px;color:var(--gold)}
+.batch-sw select{flex:1;min-width:0;background:#241F14;border:1px solid #5A4A26;border-radius:7px;color:var(--gold);font-family:var(--tc);font-size:11.5px;padding:5px 6px}
+.batch-sw.off{color:var(--sub)}
+.batch-sw.off select{background:var(--bg);border-color:var(--line);color:var(--sub)}
+.batch-sw select:focus{outline:none;border-color:var(--gold)}
 @media(max-width:480px){
   .batch-row{grid-template-columns:1fr 1fr 26px;grid-template-areas:"cat brand del" "name name name" "price price price"}
   .batch-row select{grid-area:cat}
@@ -318,9 +334,12 @@ footer .f-sep{opacity:.5}
       <span class="pen" onclick="editInline('name')" title="修改車名">✎</span>
       <small><span id="veh-sub" class="editable" onclick="editInline('sub')" title="點一下修改車牌">車牌</span><input id="veh-sub-in" class="inline-in" maxlength="16" placeholder="車牌號碼" hidden><span class="pen" onclick="editInline('sub')" title="修改車牌">✎</span></small>
     </h1>
-    <div class="mode" role="tablist">
-      <button id="tab-rec" class="on" onclick="setMode('rec')">紀錄模式</button>
-      <button id="tab-show" onclick="setMode('show')">展示模式</button>
+    <div class="mode-row">
+      <div class="mode" role="tablist">
+        <button id="tab-rec" class="on" onclick="setMode('rec')">紀錄模式</button>
+        <button id="tab-show" onclick="setMode('show')">展示模式</button>
+      </div>
+      <button id="btn-money" class="money-btn" onclick="toggleMoney()"></button>
     </div>
   </div>
 </header>
@@ -344,6 +363,7 @@ footer .f-sep{opacity:.5}
         分類骨架已經幫你排好，<b>在各分類下面補上項目</b>就好，用不到的分類留空即可。<b>保養耗材</b>也是其中一個分類，換零件順便保養可以寫在同一份裡。<br>
         · 外觀底下已排好<b>不分區／前半段／後半段</b>，寫在哪一段就歸哪一段<br>
         · 項目寫成 <b>品牌 品項名稱 金額</b>，沒有品牌就直接寫品項<br>
+        · 車上已經有同分類同名的零件時，會問你要不要<b>順便把舊的退役</b>（保養耗材不問，機油換兩次本來就該留兩筆）<br>
         · 品牌名稱有空格時用<b>底線</b>連起來：<b>Shark_Factory X2 後避震 25300</b><br>
         · 最上面的<b>日期</b>與<b>里程</b>會套用到這批全部項目<br>
         · 解析後會先讓你逐項確認，確認無誤才寫入
@@ -357,7 +377,7 @@ Brembo 基本對四保養 1200
 外觀
 曼島綠烤漆含後底板 18500"></textarea>
       <div class="grid" style="margin-top:10px">
-        <div><label>這批項目的狀態</label><select id="batch-status">
+        <div><label>這批項目的狀態</label><select id="batch-status" onchange="matchSwaps();renderBatchPreview()">
           <option value="on">現役</option><option value="out">退役</option><option value="wish">願望清單</option>
         </select></div>
       </div>
@@ -384,6 +404,10 @@ Brembo 基本對四保養 1200
         <div id="a-pos-row"><label>位置（展示排版用）</label><select id="a-pos">
           <option value="">不分區</option><option value="F">前半段</option><option value="R">後半段</option>
         </select></div>
+        <div id="a-wear-row" class="chk">
+          <label><input type="checkbox" id="a-wear"> 也算耗材</label>
+          <div class="chk-note">碟盤、來令片、皮帶這類會磨耗、之後還要再換的零件</div>
+        </div>
       </div>
       <div class="addon-box">
         <label>附加費用</label>
@@ -401,7 +425,7 @@ Brembo 基本對四保養 1200
         <button class="ghost" id="btn-cancel" onclick="resetForm()" hidden>取消</button>
         <button class="danger" id="btn-del" onclick="deleteItem()" hidden>刪除</button>
       </div>
-      <div class="hint">點下方清單的任一項目即可修改或刪除 · 資料會自動存在這台裝置的瀏覽器裡</div>
+      <div class="hint">點清單的任一項目可以修改、刪除,或用 ⇄ 汰換換上新的一顆 · 資料會自動存在這台裝置的瀏覽器裡</div>
     </div>
 
     <input class="search" id="q" placeholder="搜尋品牌或品項…" oninput="STATE.q=this.value;resetPage();renderList()">
@@ -507,6 +531,9 @@ function syncFormFields(wantStatus){
   const cur=wantStatus||st.value;
   st.innerHTML=opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
   st.value=opts.some(o=>o[0]===cur)?cur:'on';   // 退役的項目改成保養耗材時落到已完成
+  const wr=document.getElementById('a-wear-row');
+  wr.hidden=srv;                          // 分類已經是保養耗材就不必再標記
+  if(srv)document.getElementById('a-wear').checked=false;
   const m=POS_CATS[cat.value];
   sel.options[1].textContent=m?m.F[0]:POS_NAME.F;
   sel.options[2].textContent=m?m.R[0]:POS_NAME.R;
@@ -539,7 +566,7 @@ const CAT_ORDER_V1=['制動','懸吊','動力','外觀','其他'];   // v1 的�
 let VEHICLE={name:'',sub:''};
 let ITEMS=[];
 let TUNE=[];
-let LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,accent:ACCENT_DEFAULT};
+let LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,accent:ACCENT_DEFAULT,hideMoney:false};
 let NEXT_ID=0;
 let BK=0;         // 最後一次備份的時間
 let BK_SNOOZE=0;  // 備份提醒按「稍後再說」的時間
@@ -559,6 +586,18 @@ const fmt=n=>'NT$ '+n.toLocaleString('zh-TW');
 const addSum=i=>(i.add||[]).reduce((t,a)=>t+a.p,0);
 const itemTotal=i=>i.p+addSum(i);
 const sum=a=>a.reduce((t,i)=>t+itemTotal(i),0);
+
+/* 隱藏金額：遞手機給別人看零件清單時按一下。遮的是「顯示」的地方 ——
+   統計卡、明細價格、小計；長條圖整張收起來,因為長條的比例本身也會
+   洩漏花費結構。新增／編輯表單裡的數字不遮,遮了就沒辦法輸入。 */
+const MASK='NT$ ＊＊＊＊';
+const money=v=>LAYOUT.hideMoney?MASK:fmt(v);
+const num=v=>LAYOUT.hideMoney?'＊＊＊＊':v.toLocaleString('zh-TW');   // 不帶 NT$ 的窄版
+
+/* 耗材標記：碟盤既是制動零件也是會磨耗的東西。分類留在制動（展示模式
+   才對得起來）,另外打一個勾,保養耗材那張卡就統計得到。分類本身已經是
+   保養耗材的不需要重複標記。 */
+const isWear=i=>i.wear===true&&i.c!=='保養耗材';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ══════════ 儲存 / 讀取 / 匯出入 ══════════ */
@@ -611,7 +650,7 @@ function applyData(d){
   // 驗證色票值：手改壞的檔案不該把顏色設成看不見的東西
   const accent=ACCENTS.some(a=>a[0]===L.accent)?L.accent:ACCENT_DEFAULT;
   LAYOUT={catOrder:order,wish:L.wish!==false,tune:L.tune!==false,
-          cover:L.cover||null,accent};
+          cover:L.cover||null,accent,hideMoney:L.hideMoney===true};
   // 正規化：舊分類轉新分類、補日期、金額轉數字
   ITEMS.forEach(i=>{
     // 舊版把保養記成第四種狀態，現在改成分類；舊備份還原時自動搬過去
@@ -619,11 +658,14 @@ function applyData(d){
     i.c=LEGACY[i.c]||i.c;
     if(!CATS.includes(i.c))i.c='其他';
     if(!['on','out','wish'].includes(i.s))i.s='on';
+    // 保養耗材只有已完成／未完成，之前誤用汰換弄出來的「退役」補回已完成
+    if(i.c==='保養耗材'&&i.s==='out')i.s='on';
     i.d=i.d||today();
     i.p=Math.max(0,parseInt(i.p)||0);
     if(i.mt!=null)i.mt=Number(i.mt)||0;   // 最後修改時間，舊備份沒有此欄位
     delete i.rec;                          // 回收金額已停用，清掉舊備份的殘留
     delete i.img;                          // 逐項照片已移除，不留著白佔儲存空間
+    i.wear=(i.wear===true&&i.c!=='保養耗材')||undefined;   // 耗材標記
     if(i.km!=null)i.km=Math.max(0,parseInt(i.km)||0)||undefined;
     if(i.add)i.add=i.add.filter(a=>a&&a.t).map(a=>({t:a.t,p:Math.max(0,parseInt(a.p)||0)}));
   });
@@ -744,7 +786,7 @@ function clearAll(){
   if(!confirm('確定要清空全部資料嗎？\n\n所有零件、照片、車名與版面設定都會刪除，無法復原。\n建議先按「備份資料」。'))return;
   if(!confirm('再確認一次 — 真的要全部清空？'))return;
   VEHICLE={name:'',sub:''};ITEMS=[];TUNE=[];NEXT_ID=0;
-  LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,accent:ACCENT_DEFAULT};
+  LAYOUT={catOrder:[...SHOW_CATS],wish:true,tune:true,cover:null,accent:ACCENT_DEFAULT,hideMoney:false};
   SHOW_EDIT=false;STATE.status='all';STATE.cat='all';STATE.q='';
   document.getElementById('q').value='';
   resetForm();renderAll();doSave();
@@ -970,9 +1012,52 @@ function parseBatchText(raw){
   return{items,meta,warnings};
 }
 
+/* 比對車上已經有的同一件東西。規則是「同分類＋同品項名」：換牌子
+   （NCY→福田）照樣認得出來，制動的碟盤也不會對到動力的碟盤。 */
+const normName=t=>(t||'').replace(/\s+/g,'').toLowerCase();
+
+function swapCandidates(it){
+  // 保養耗材是事件紀錄，換兩次機油就是兩筆，不該互相汰換
+  if(it.c==='保養耗材'||!it.n)return[];
+  const key=normName(it.n);
+  return ITEMS.filter(i=>i.s==='on'&&i.c===it.c&&normName(i.n)===key)
+    .map(i=>({id:i.id,b:i.b,n:i.n,p:i.p}));
+}
+
+function matchSwaps(){
+  // 貼一批願望清單或退役品去汰換現役零件沒有道理，只有現役才比對
+  const on=document.getElementById('batch-status').value==='on';
+  // 一個舊件只能被換掉一次。同一批貼了兩片碟盤卻都指向同一片舊的，
+  // 舊的只會退役一次，結果留下兩片現役 —— 正好是這功能要解決的問題。
+  const used=new Set();
+  BATCH.forEach(it=>{
+    it.swOpts=on?swapCandidates(it):[];
+    // 先讓已經明確選過、而且還沒被別人佔走的保住位子
+    if(!it.swOpts.some(o=>o.id===it.sw))it.sw=null;
+    if(it.sw!=null){if(used.has(it.sw))it.sw=null;else used.add(it.sw);}
+  });
+  BATCH.forEach(it=>{
+    if(it.sw!=null||it.swOff||!it.swOpts.length)return;
+    // 其餘的挑還沒被佔走的；沒得挑就維持不汰換
+    const pick=it.swOpts.find(o=>!used.has(o.id));
+    if(pick){it.sw=pick.id;used.add(pick.id);}
+  });
+}
+
+function setBatchSwap(x,v){
+  const it=BATCH[x];
+  const id=v?Number(v):null;
+  // 手動指定時讓後選的那筆拿走，被搶走的改成不汰換，避免兩筆換同一個
+  if(id!=null)BATCH.forEach((o,i)=>{if(i!==x&&o.sw===id){o.sw=null;o.swOff=true;}});
+  it.sw=id;
+  it.swOff=!v;                            // 記住選擇，重算時不要蓋掉
+  renderBatchPreview();
+}
+
 function parseBatch(){
   const r=parseBatchText(document.getElementById('batch-in').value);
   BATCH=r.items;BATCH_META=r.meta;BATCH_WARN=r.warnings;
+  matchSwaps();
   renderBatchPreview();
 }
 
@@ -984,23 +1069,33 @@ function renderBatchPreview(){
     return;
   }
   const total=BATCH.reduce((t,i)=>t+i.p,0);
+  const nsw=BATCH.filter(i=>i.sw!=null).length;
   const meta=[BATCH_META.d?'日期 '+BATCH_META.d:'日期 '+today()+'（預設）',
               BATCH_META.km?'里程 '+BATCH_META.km.toLocaleString('zh-TW')+' km':''].filter(Boolean);
   el.innerHTML=`
-    <div class="batch-head">解析出 ${BATCH.length} 筆 · 小計 ${fmt(total)}<br><span>${meta.join(' · ')}</span></div>
+    <div class="batch-head">解析出 ${BATCH.length} 筆 · 小計 ${money(total)}${nsw?' · 順便汰換 '+nsw+' 筆':''}<br><span>${meta.join(' · ')}</span></div>
     ${BATCH_WARN.length?`<div class="batch-warn">${BATCH_WARN.map(esc).join('<br>')}</div>`:''}
     <div class="batch-rows">
       ${BATCH.map((it,x)=>`
+        <div class="batch-item">
         <div class="batch-row">
-          <select onchange="BATCH[${x}].c=this.value">${CATS.map(c=>`<option${c===it.c?' selected':''}>${c}</option>`).join('')}</select>
+          <select onchange="BATCH[${x}].c=this.value;matchSwaps();renderBatchPreview()">${CATS.map(c=>`<option${c===it.c?' selected':''}>${c}</option>`).join('')}</select>
           <input value="${esc(it.b)}" placeholder="品牌" onchange="BATCH[${x}].b=this.value.trim()||'—'">
-          <input value="${esc(it.n)}" placeholder="品項名稱" onchange="BATCH[${x}].n=this.value.trim()">
+          <input value="${esc(it.n)}" placeholder="品項名稱" onchange="BATCH[${x}].n=this.value.trim();matchSwaps();renderBatchPreview()">
           <input type="number" inputmode="numeric" value="${it.p||''}" placeholder="金額" onchange="BATCH[${x}].p=Math.max(0,parseInt(this.value)||0);renderBatchPreview()">
           <button class="mini" onclick="BATCH.splice(${x},1);renderBatchPreview()" title="移除這筆">✕</button>
+        </div>
+        ${it.swOpts&&it.swOpts.length?`
+        <div class="batch-sw ${it.sw?'':'off'}">⇄
+          <select onchange="setBatchSwap(${x},this.value)">
+            ${it.swOpts.map(o=>`<option value="${o.id}"${o.id===it.sw?' selected':''}>汰換舊的 ${esc(o.b)} ${esc(o.n)} ${money(o.p)}</option>`).join('')}
+            <option value=""${it.sw?'':' selected'}>不汰換，直接新增一筆</option>
+          </select>
+        </div>`:''}
         </div>`).join('')}
     </div>
     <div class="btns">
-      <button class="main" onclick="commitBatch()">確認加入 ${BATCH.length} 筆</button>
+      <button class="main" onclick="commitBatch()">確認加入 ${BATCH.length} 筆${nsw?`，汰換 ${nsw} 筆`:''}</button>
       <button class="ghost" onclick="BATCH=[];BATCH_WARN=[];renderBatchPreview()">取消</button>
     </div>`;
 }
@@ -1011,15 +1106,23 @@ function commitBatch(){
   const st=document.getElementById('batch-status').value;
   // mt 依貼上順序遞減，清單才會照原本的順序排，而不是整批倒過來
   const base=stamp();
-  const fresh=BATCH.map((it,x)=>({
-    id:NEXT_ID++,b:it.b,n:it.n,p:it.p,c:it.c,pos:it.pos,s:st,d,mt:base-x,
-    km:BATCH_META.km||undefined
-  }));
+  let swapped=0;
+  const fresh=BATCH.map((it,x)=>{
+    // 汰換：舊件轉退役並退出展示，新件把位置與耗材標記接過來
+    const old=it.sw!=null?ITEMS.find(i=>i.id===it.sw):null;
+    if(old){old.s='out';old.v=false;old.mt=base-x;swapped++;}
+    return{
+      id:NEXT_ID++,b:it.b,n:it.n,p:it.p,c:it.c,
+      pos:it.pos||(old&&old.pos)||undefined,
+      wear:(old&&old.wear)||undefined,
+      s:st,d,mt:base-x,km:BATCH_META.km||undefined
+    };
+  });
   ITEMS.unshift(...fresh);
   const n=fresh.length;
   clearBatch();
   resetPage();renderAll();
-  toast('已加入 '+n+' 筆');
+  toast('已加入 '+n+' 筆'+(swapped?'，汰換 '+swapped+' 筆':''));
 }
 
 /* ══════════ 紀錄模式 ══════════ */
@@ -1038,16 +1141,22 @@ function renderStats(){
   // 退役只算當初的購入金額，不扣回收價；這樣數字才對得起來：
   // 歷史總投入 = 現役零件 + 退役零件 + 保養耗材
   const s=stats();
+  // 標了耗材的零件（碟盤等）錢已經算在自己的分類裡，這一行只是換個角度再看一次，
+  // 不加進總投入，否則同一筆會被算兩次。
+  const wear=sum(ITEMS.filter(i=>isWear(i)&&i.s!=='wish'));
   document.getElementById('stats').innerHTML=`
-    <div class="stat total"><div class="k">歷史總投入</div><div class="v">${fmt(s.spent)}</div></div>
-    <div class="stat"><div class="k">現役零件</div><div class="v">${fmt(sum(s.on))}</div></div>
-    <div class="stat out"><div class="k">退役零件</div><div class="v">${fmt(sum(s.out))}</div></div>
-    <div class="stat wish"><div class="k">願望清單</div><div class="v">${fmt(sum(s.wish))}</div></div>
-    <div class="stat srv"><div class="k">保養耗材</div><div class="v">${fmt(sum(s.srv))}</div></div>`;
+    <div class="stat total"><div class="k">歷史總投入</div><div class="v">${money(s.spent)}</div></div>
+    <div class="stat"><div class="k">現役零件</div><div class="v">${money(sum(s.on))}</div></div>
+    <div class="stat out"><div class="k">退役零件</div><div class="v">${money(sum(s.out))}</div></div>
+    <div class="stat wish"><div class="k">願望清單</div><div class="v">${money(sum(s.wish))}</div></div>
+    <div class="stat srv"><div class="k">保養耗材</div><div class="v">${money(sum(s.srv))}</div>
+      ${wear?`<div class="sub" title="這些錢已經算在制動、動力等各自的分類裡，沒有重複加進歷史總投入">另有耗材零件 ${num(wear)}</div>`:''}</div>`;
 }
 
 function renderBars(){
   const el=document.getElementById('bars');
+  // 隱藏金額時整張收起來：就算把數字遮掉，長條的長度還是看得出花費結構
+  if(LAYOUT.hideMoney){el.hidden=true;el.innerHTML='';return;}
   const all=CATS.map(c=>({c,v:sum(ITEMS.filter(i=>i.c===c&&i.s!=='wish'))}))
     .filter(r=>r.v>0);
   // 保養耗材釘在最上面，其餘依金額由大到小
@@ -1067,15 +1176,18 @@ function renderFilters(){
           ['wish','願望清單','gold']];
   document.getElementById('f-status').innerHTML=st.map(([k,label,cls])=>
     `<button class="chip ${cls} ${STATE.status===k?'on':''}" onclick="STATE.status='${k}';resetPage();renderFilters();renderList()">${label}</button>`).join('');
-  document.getElementById('f-cat').innerHTML=['all',...CATS].map(c=>
-    `<button class="chip ${STATE.cat===c?'on':''}" onclick="STATE.cat='${c}';resetPage();renderFilters();renderList()">${c==='all'?'所有分類':c}</button>`).join('');
+  // 耗材不是分類而是標記，但撈的時候跟分類一樣好用，就併在同一排
+  const catChips=['all',...CATS,'wear'];
+  const catLabel=c=>c==='all'?'所有分類':c==='wear'?'耗材零件':c;
+  document.getElementById('f-cat').innerHTML=catChips.map(c=>
+    `<button class="chip ${STATE.cat===c?'on':''}" onclick="STATE.cat='${c}';resetPage();renderFilters();renderList()">${catLabel(c)}</button>`).join('');
 }
 
 // 說明列。保養的狀態要用它自己的說法，見 stName。
 function metaLine(i){
   const parts=[i.c+(i.pos?'·'+posLabel(i.c,i.pos)[0]:''),stName(i),i.d];
   if(i.km)parts.push(i.km.toLocaleString('zh-TW')+' km');
-  if(addSum(i))parts.push('本體 '+fmt(i.p)+' + 附加 '+fmt(addSum(i)));
+  if(addSum(i))parts.push('本體 '+money(i.p)+' + 附加 '+money(addSum(i)));
   return parts.join(' · ');
 }
 
@@ -1096,7 +1208,7 @@ function renderList(){
   const q=STATE.q.trim().toLowerCase();
   const list=ITEMS.filter(i=>
     (STATE.status==='all'||i.s===STATE.status)&&
-    (STATE.cat==='all'||i.c===STATE.cat)&&
+    (STATE.cat==='all'||(STATE.cat==='wear'?isWear(i):i.c===STATE.cat))&&
     (!q||(i.b+i.n).toLowerCase().includes(q)))
     // 最近修改的排前面；舊資料沒有 mt，用 id 遞補（id 越大越新）
     .sort((a,b)=>(b.mt||0)-(a.mt||0)||b.id-a.id);
@@ -1106,13 +1218,13 @@ function renderList(){
   rowsEl.innerHTML=list.length?shown.map(i=>`
     <div class="row ${i.s} ${i.id===EDIT_ID?'editing':''}" onclick="editItem(${i.id})">
       <span class="dot ${i.s}"></span>
-      <div><div class="name"><b>${esc(i.b)}</b>${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}</div>
+      <div><div class="name"><b>${esc(i.b)}</b>${esc(i.n)}${i.add&&i.add.length?'<span class="badge">客製</span>':''}${isWear(i)?'<span class="badge wear">耗材</span>':''}</div>
         <div class="meta">${metaLine(i)}</div></div>
-      <div class="price ${itemTotal(i)?'':'tbd'}">${itemTotal(i)?fmt(itemTotal(i)):'未定價'}</div>
+      <div class="price ${itemTotal(i)?'':'tbd'}">${itemTotal(i)?money(itemTotal(i)):'未定價'}</div>
     </div>`).join(''):'<div class="row"><span></span><div class="name" style="color:var(--sub)">沒有符合的項目 — 換個條件試試</div><div></div></div>';
   renderPager(pages,list.length);
   const priced=list.filter(i=>itemTotal(i)>0);
-  noteEl.textContent=`共 ${list.length} 項 · 小計 ${fmt(sum(priced))}${list.length-priced.length?` · 另有 ${list.length-priced.length} 項未定價`:''}`;
+  noteEl.textContent=`共 ${list.length} 項 · 小計 ${money(sum(priced))}${list.length-priced.length?` · 另有 ${list.length-priced.length} 項未定價`:''}`;
 }
 
 function renderPager(pages,total){
@@ -1143,6 +1255,8 @@ function saveItem(){
   const pos=document.getElementById('a-pos').value||undefined;
   const km=parseInt(document.getElementById('a-km').value)||undefined;   // 安裝或保養當下的里程
   const mt=stamp();
+  // 分類本身就是保養耗材的不必再標記一次
+  const wear=(document.getElementById('a-wear').checked&&c!=='保養耗材')||undefined;
   if(SWAP_ID!==null){
     // 汰換：舊件轉退役，新件以現役入帳
     const old=ITEMS.find(i=>i.id===SWAP_ID);
@@ -1151,12 +1265,12 @@ function saveItem(){
       old.v=false; // 退役品預設不放進展示頁，想放再去展示模式點亮
       old.mt=mt;
     }
-    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s:'on',d,pos,km,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s:'on',d,pos,km,mt,wear,add:FORM_ADD.length?[...FORM_ADD]:undefined});
   }else if(EDIT_ID===null){
-    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s,d,pos,km,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+    ITEMS.unshift({id:NEXT_ID++,b,n,p,c,s,d,pos,km,mt,wear,add:FORM_ADD.length?[...FORM_ADD]:undefined});
   }else{
     const it=ITEMS.find(i=>i.id===EDIT_ID);
-    if(it)Object.assign(it,{b,n,p,c,s,d,pos,km,mt,add:FORM_ADD.length?[...FORM_ADD]:undefined});
+    if(it)Object.assign(it,{b,n,p,c,s,d,pos,km,mt,wear,add:FORM_ADD.length?[...FORM_ADD]:undefined});
   }
   resetPage();          // 剛動過的項目會排在第一頁最前面
   resetForm();renderAll();
@@ -1175,12 +1289,15 @@ function editItem(id){
   document.getElementById('a-pos').value=it.pos||'';
   syncFormFields(it.s);
   document.getElementById('a-km').value=it.km||'';
+  document.getElementById('a-wear').checked=it.wear===true;
   FORM_ADD=(it.add||[]).map(a=>({...a}));renderAddons();
   document.getElementById('form-title').textContent='✎ 編輯：'+it.n;
   document.getElementById('btn-save').textContent='儲存變更';
   document.getElementById('btn-cancel').hidden=false;
   document.getElementById('btn-del').hidden=false;
-  document.getElementById('btn-swap').hidden=it.s!=='on';
+  // 保養耗材是事件紀錄，機油換兩次就該留兩筆，沒有「把舊的換掉」這回事。
+  // 這條跟批次汰換的規則一致，見 swapCandidates。
+  document.getElementById('btn-swap').hidden=it.s!=='on'||it.c==='保養耗材';
   renderList();
   document.getElementById('addbox').scrollIntoView({behavior:'smooth',block:'center'});
 }
@@ -1189,8 +1306,10 @@ function startSwap(){
   const old=ITEMS.find(i=>i.id===EDIT_ID);
   if(!old)return;
   SWAP_ID=old.id;EDIT_ID=null;
-  document.getElementById('a-brand').value='';
-  document.getElementById('a-name').value='';
+  // 帶入舊件的品牌與品項：換同一種零件（碟盤換碟盤）不必重打，
+  // 換別的牌子直接蓋掉就好。價格留空，因為會漲價，那才是要重填的。
+  document.getElementById('a-brand').value=old.b==='—'?'':old.b;
+  document.getElementById('a-name').value=old.n;
   document.getElementById('a-price').value='';
   document.getElementById('a-cat').value=old.c;
   document.getElementById('a-status').value='on';
@@ -1198,14 +1317,15 @@ function startSwap(){
   document.getElementById('a-pos').value=old.pos||'';
   syncFormFields('on');
   document.getElementById('a-km').value='';
+  document.getElementById('a-wear').checked=old.wear===true;
   FORM_ADD=[];renderAddons();
-  document.getElementById('form-title').textContent='⇄ 汰換「'+old.n+'」— 填入新零件';
+  document.getElementById('form-title').textContent='⇄ 汰換「'+old.n+'」— 確認品項並填新價格';
   document.getElementById('btn-save').textContent='完成汰換';
   document.getElementById('btn-swap').hidden=true;
   document.getElementById('btn-del').hidden=true;
   document.getElementById('btn-cancel').hidden=false;
   renderList();
-  document.getElementById('a-name').focus();
+  document.getElementById('a-price').focus();
 }
 
 function deleteItem(){
@@ -1218,6 +1338,7 @@ function resetForm(){
   EDIT_ID=null;SWAP_ID=null;
   FORM_ADD=[];renderAddons();
   ['a-brand','a-name','a-price','a-km','a-add-t','a-add-p'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('a-wear').checked=false;
   document.getElementById('a-date').value=today();
   document.getElementById('a-pos').value='';
   syncFormFields();
@@ -1494,7 +1615,22 @@ function moveItem(id,dir){
   renderShow();renderList();
 }
 
+function toggleMoney(){
+  LAYOUT.hideMoney=!LAYOUT.hideMoney;
+  renderMoneyBtn();renderStats();renderBars();renderList();renderBatchPreview();save();
+  toast(LAYOUT.hideMoney?'金額已隱藏':'金額已顯示');
+}
+
+function renderMoneyBtn(){
+  const b=document.getElementById('btn-money');
+  b.classList.toggle('off',!!LAYOUT.hideMoney);
+  b.textContent=LAYOUT.hideMoney?'金額：隱藏':'金額：顯示';
+  b.title=LAYOUT.hideMoney?'目前遮住所有金額，點一下顯示':'點一下遮住所有金額';
+}
+
 function setMode(m){
+  // 展示模式本來就不出現金額，開關擺在那裡只會讓人以為那裡也會露
+  document.getElementById('btn-money').hidden=m!=='rec';
   document.getElementById('view-rec').classList.toggle('on',m==='rec');
   document.getElementById('view-show').classList.toggle('on',m==='show');
   document.getElementById('tab-rec').classList.toggle('on',m==='rec');
@@ -1520,7 +1656,7 @@ function setAccent(hex){
   toast('主題色已換成'+(hit?hit[1]:hex));
 }
 
-function renderAll(){renderName();renderTheme();syncStickyHead();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();renderDataHint();}
+function renderAll(){renderName();renderTheme();syncStickyHead();renderMoneyBtn();renderStats();renderBars();renderFilters();renderList();renderShow();renderBackupNote();renderDataHint();}
 
 /* ══════════ 啟動 ══════════ */
 document.getElementById('a-cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
