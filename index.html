@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Build Sheet 改裝帳本 · 部署 2026-08-30 · 展示版面上鎖 + 封面焦點 -->
+<!-- Build Sheet 改裝帳本 · 部署 2026-09-01 · 品牌一律大寫 -->
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -391,7 +391,7 @@ Brembo 基本對四保養 1200
     <div class="addbox" id="addbox">
       <h3 id="form-title">＋ 新增項目</h3>
       <div class="grid">
-        <div><label>品牌</label><input id="a-brand" placeholder="可留空"></div>
+        <div><label>品牌</label><input id="a-brand" placeholder="可留空" style="text-transform:uppercase"></div>
         <div><label>完工價（NT$）</label><input id="a-price" type="number" inputmode="numeric" placeholder="0 = 未定價"></div>
         <div class="full"><label>品項名稱</label><input id="a-name" placeholder="例：前土除"></div>
         <div id="a-cat-row"><label>分類</label><select id="a-cat"></select></div>
@@ -571,6 +571,9 @@ function goPage(p){PAGE=p;renderList();document.getElementById('rows').scrollInt
 
 const today=()=>{const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')};
 const fmt=n=>'NT$ '+n.toLocaleString('zh-TW');
+/* 品牌一律存大寫：展示模式本來就畫成大寫，存原樣會讓同一個品牌
+   分裂成兩筆（實際資料裡就有 Anchor 與 ANCHOR）。中文不受影響。 */
+const upperBrand=t=>(String(t||'').trim()||'—').toUpperCase();
 const addSum=i=>(i.add||[]).reduce((t,a)=>t+a.p,0);
 const itemTotal=i=>i.p+addSum(i);
 const sum=a=>a.reduce((t,i)=>t+itemTotal(i),0);
@@ -647,6 +650,7 @@ function applyData(d){
     if(!['on','out','wish'].includes(i.s))i.s='on';
     // 保養耗材只有已完成／未完成，之前誤用汰換弄出來的「退役」補回已完成
     if(i.c==='保養耗材'&&i.s==='out')i.s='on';
+    i.b=upperBrand(i.b);                   // 品牌統一大寫，順便合併大小寫不同的同一個品牌
     i.d=i.d||today();
     i.p=Math.max(0,parseInt(i.p)||0);
     if(i.mt!=null)i.mt=Number(i.mt)||0;   // 最後修改時間，舊備份沒有此欄位
@@ -992,7 +996,7 @@ function parseBatchText(raw){
     if(!n){warnings.push('第 '+no+' 行看不出品項，已略過');return;}
     if(!cat)warnings.push('第 '+no+' 行前面沒有分類，先歸到「其他」：'+n);
 
-    items.push({b,n,p,c:cat||'其他',pos:pos||undefined});
+    items.push({b:upperBrand(b),n,p,c:cat||'其他',pos:pos||undefined});
   });
   return{items,meta,warnings};
 }
@@ -1065,7 +1069,7 @@ function renderBatchPreview(){
         <div class="batch-item">
         <div class="batch-row">
           <select onchange="BATCH[${x}].c=this.value;matchSwaps();renderBatchPreview()">${CATS.map(c=>`<option${c===it.c?' selected':''}>${c}</option>`).join('')}</select>
-          <input value="${esc(it.b)}" placeholder="品牌" onchange="BATCH[${x}].b=this.value.trim()||'—'">
+          <input value="${esc(it.b)}" placeholder="品牌" style="text-transform:uppercase" onchange="BATCH[${x}].b=upperBrand(this.value)">
           <input value="${esc(it.n)}" placeholder="品項名稱" onchange="BATCH[${x}].n=this.value.trim();matchSwaps();renderBatchPreview()">
           <input type="number" inputmode="numeric" value="${it.p||''}" placeholder="金額" onchange="BATCH[${x}].p=Math.max(0,parseInt(this.value)||0);renderBatchPreview()">
           <button class="mini" onclick="BATCH.splice(${x},1);renderBatchPreview()" title="移除這筆">✕</button>
@@ -1231,7 +1235,7 @@ function renderPager(pages,total){
 }
 
 function saveItem(){
-  const b=document.getElementById('a-brand').value.trim()||'—';
+  const b=upperBrand(document.getElementById('a-brand').value);
   const n=document.getElementById('a-name').value.trim();
   if(!n){document.getElementById('a-name').focus();return;}
   const p=Math.max(0,parseInt(document.getElementById('a-price').value)||0);
