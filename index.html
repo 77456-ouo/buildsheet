@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Build Sheet 改裝帳本 · 部署 2026-09-01 · 品牌一律大寫 -->
+<!-- Build Sheet 改裝帳本 · 部署 2026-09-01 · 封面改成 IG 方形 -->
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -269,7 +269,10 @@ h1 small .pen{vertical-align:1px;margin-left:7px;font-size:10px}
 .tune-add{margin-top:10px;appearance:none;background:transparent;border:1px dashed var(--line);color:var(--sub);border-radius:8px;font-family:var(--tc);font-size:12.5px;padding:8px 14px;cursor:pointer;width:100%}
 .tune-add:hover{color:var(--ink);border-color:var(--sub)}
 .sub-div{font-family:var(--num);font-size:10px;font-weight:600;letter-spacing:.26em;color:var(--sub);text-transform:uppercase;margin:12px 0 2px;padding-left:2px}
-.cover{width:100%;height:190px;object-fit:cover;object-position:50% 50%;border-radius:10px;margin:18px 0 0;border:1px solid #2c3a31;cursor:zoom-in}
+/* 比照 IG 貼文的方形。原本是固定高 190px，比例會隨螢幕寬度跑掉 ——
+   手機上 1.64:1、桌機上變成 4.12:1 的細長條。改用 aspect-ratio 就一致了。
+   桌機限寬置中，不然會變成 780px 的巨大方塊（IG 網頁版也是這樣處理）。*/
+.cover{display:block;width:100%;max-width:470px;aspect-ratio:1;object-fit:cover;object-position:50% 50%;border-radius:10px;margin:18px auto 0;border:1px solid #2c3a31;cursor:zoom-in}
 /* 編輯版面時改成拖曳調整焦點，touch-action 讓手機不要跟著捲動 */
 .cover.adj{cursor:grab;touch-action:none}
 .cover.adj:active{cursor:grabbing}
